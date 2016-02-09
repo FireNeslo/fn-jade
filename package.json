@@ -11,8 +11,11 @@
   "license": "ISC",
   "devDependencies": {
     "babel": "^6.3.26",
+    "babel-generator": "^6.5.0",
     "babel-preset-es2015-rollup": "^1.1.1",
     "babel-preset-stage-0": "^6.3.13",
+    "babel-template": "^6.5.0",
+    "babel-traverse": "^6.5.0",
     "babel-types": "^6.4.5",
     "budo": "^8.0.4",
     "gulp": "^3.9.0",
@@ -30,6 +33,7 @@
   "dependencies": {
     "babel-types": "^6.4.5",
     "babylon": "^6.4.5",
-    "virtual-dom": "^2.1.1"
+    "virtual-dom": "^2.1.1",
+    "jade": "^1.11.0"
   }
 }
