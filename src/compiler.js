@@ -180,18 +180,11 @@ export default class ElementCreateCompiler {
   }
   visitTag(tag, create) {
     if(tag.code) tag.block.nodes.push(tag.code)
-    if(!tag.attrs.length) {
-      create = callExpression(this.create, [
-        stringLiteral(tag.name),
-        this.visitBlock(tag.block)
-      ])
-    } else {
-      create = callExpression(this.create, [
-        stringLiteral(tag.name),
-        this.visitAttributes(tag.attrs),
-        this.visitBlock(tag.block)
-      ])
-    }
+    create = callExpression(this.create, [
+      stringLiteral(tag.name),
+      this.visitAttributes(tag.attrs),
+      this.visitBlock(tag.block)
+    ])
     return Object.assign(create, {
       loc: {
         start: {line: tag.line }

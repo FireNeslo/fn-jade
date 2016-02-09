@@ -12,7 +12,7 @@ gulp.task('build', function(){
 });
 
 gulp.task('runtime', function(){
-  return gulp.src('src/index.js', {read: false})
+  return gulp.src('src/runtime.js', {read: false})
     .pipe(rollup(require('./rollup.config')))
     .pipe(sourcemaps.write("."))
     .pipe(gulp.dest('.'));

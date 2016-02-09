@@ -224,11 +224,7 @@
       key: "visitTag",
       value: function visitTag(tag, create) {
         if (tag.code) tag.block.nodes.push(tag.code);
-        if (!tag.attrs.length) {
-          create = babelTypes.callExpression(this.create, [babelTypes.stringLiteral(tag.name), this.visitBlock(tag.block)]);
-        } else {
-          create = babelTypes.callExpression(this.create, [babelTypes.stringLiteral(tag.name), this.visitAttributes(tag.attrs), this.visitBlock(tag.block)]);
-        }
+        create = babelTypes.callExpression(this.create, [babelTypes.stringLiteral(tag.name), this.visitAttributes(tag.attrs), this.visitBlock(tag.block)]);
         return Object.assign(create, {
           loc: {
             start: { line: tag.line }
@@ -286,10 +282,6 @@
 
     return jade.render(template, Object.assign({ compiler: ElementCreateCompiler, template: template }, options));
   }
-
-  console.log(fnJade("\nif stats && stats.minutesPlayed\n", {
-    pretty: true
-  }));
 
   return fnJade;
 
