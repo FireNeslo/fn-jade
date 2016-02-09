@@ -14,6 +14,7 @@ export default function element(tag, attributes, children) {
     attributes = null
   }
   return new VNode(tag, {attributes}, children.map( node => {
+    if(!node) return new VText('')
     return typeof node === 'string' ? new VText(node) : node
   }))
 }
