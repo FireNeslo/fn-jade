@@ -9,7 +9,7 @@
       children = [children];
     }
     return new virtualDom.VNode(tag, { attributes: attributes }, children.map(function (node) {
-      if (!node) return new virtualDom.VText('');
+      if (node == null) return new virtualDom.VText('');
       return typeof node === 'string' ? new virtualDom.VText(node) : node;
     }));
   }

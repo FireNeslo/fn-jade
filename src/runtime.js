@@ -5,7 +5,7 @@ export default function element(tag, attributes, children) {
     children = [children]
   }
   return new VNode(tag, {attributes}, children.map( node => {
-    if(!node) return new VText('')
+    if(node == null) return new VText('')
     return typeof node === 'string' ? new VText(node) : node
   }))
 }
