@@ -43,11 +43,17 @@
 
   var reduceTemplate = template("OBJECT.reduce(function each(nodes, VALUE, KEY){\n  DECLARATIONS\n  return nodes.concat(BLOCK);\n}, [])");
 
-  function each(object) {
+  function each(object, template) {
     if (object.BLOCK.elements) {
-      return babelTypes.spreadElement(reduceTemplate(object).expression);
+      template = reduceTemplate(object);
+    } else {
+      template = eachTemplate(object);
     }
-    return babelTypes.spreadElement(eachTemplate(object).expression);
+    try {
+      return babelTypes.spreadElement(template.expression);
+    } catch (e) {
+      debugger;
+    }
   }
 
   function extractExpression(value, compiler) {
@@ -64,7 +70,6 @@
 
         if (node.name in compiler.declared) return;
         compiler.declared[node.name] = true;
-        console.log(node.name);
       },
       VariableDeclarator: function VariableDeclarator(_ref3) {
         var node = _ref3.node;
@@ -154,8 +159,9 @@
             conditions.push(extractExpression(nodes[i].val.slice(2), this));
             consequents.push(this.visitBlock(nodes[i].block));
             while (/^else if/.test(nodes[++i] && nodes[i].val)) {
+              var consequent = this.visitBlock(nodes[i].block);
               conditions.push(extractExpression(nodes[i].val.slice(7), this));
-              consequents.push(this.visitBlock(nodes[i].block));
+              consequents.push(consequent);
             }
             if (/^else/.test(nodes[i] && nodes[i].val)) {
               var alternate = this.visitBlock(nodes[i].block);
@@ -168,14 +174,24 @@
               var consequent = consequents[j];
 
               if (expression) {
+                if (expression.type === 'SpreadElement') {
+                  expression = expression.argument;
+                }
                 expression = babelTypes.conditionalExpression(condition, consequent, expression);
               } else if (alternate) {
+                if (alternate.type === 'SpreadElement') {
+                  expression = alternate.argument;
+                }
                 expression = babelTypes.conditionalExpression(condition, consequent, alternate);
               } else {
                 expression = babelTypes.conditionalExpression(condition, consequent, babelTypes.unaryExpression('void', babelTypes.numericLiteral(0)));
               }
             }
-            result.push(babelTypes.spreadElement(expression));
+            try {
+              result.push(babelTypes.spreadElement(expression));
+            } catch (e) {
+              debugger;
+            }
           } else {
             expression = this.visit(nodes[i]);
             if (expression) result.push(expression);
@@ -190,8 +206,14 @@
         return babelTypes.arrayExpression(result);
       }
     }, {
+      key: "visitDoctype",
+      value: function visitDoctype() {
+        return babelTypes.unaryExpression('void', babelTypes.numericLiteral(0));
+      }
+    }, {
       key: "visitTag",
       value: function visitTag(tag, create) {
+        console.log('enter tag');
         if (tag.code) tag.block.nodes.push(tag.code);
         if (!tag.attrs.length) {
           create = babelTypes.callExpression(this.create, [babelTypes.stringLiteral(tag.name), this.visitBlock(tag.block)]);
@@ -209,6 +231,7 @@
       value: function visitAttributes(attrs) {
         var _this = this;
 
+        console.log('visit attributes', attrs);
         return babelTypes.objectExpression(attrs.map(function (attr) {
           return babelTypes.objectProperty(babelTypes.stringLiteral(attr.name), extractExpression(attr.val, _this));
         }));
@@ -216,11 +239,14 @@
     }, {
       key: "visitCode",
       value: function visitCode(code) {
+        console.log('code');
         return extractExpression(code.val, this);
       }
     }, {
       key: "visitEach",
       value: function visitEach(node) {
+        console.log('enter each');
+
         this.declared[node.key] = false;
         this.declared[node.val] = false;
         var declarations = this.declarations;
@@ -250,12 +276,14 @@
     return ElementCreateCompiler;
   }();
 
-  function vJade(template) {
+  function fnJade(template) {
     var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
     return jade.render(template, Object.assign({ compiler: ElementCreateCompiler, template: template }, options));
   }
 
-  return vJade;
+  console.log(fnJade("\nstyle= require('./field.sass')\nif league\n  .fts-fantasy_field(\n    class=\"fts-fantasy_field_\" + league.gameType\n    style=background)\n    content\n    .fts-players_section\n      each position in positions\n        .fts-players_section_row_wrapper\n          .fts-players_section_row\n            each player in playersFor(fantasyPlayerCollection, position)\n              ft-player(\n                gameweek=gameweek.id\n                fantasy-player=player.id\n                price-context=priceContext\n                context=context)\n            if context == 'edit'\n              each slot in requiredSlots(fantasyPlayerCollection, position)\n                .fts-players_section_required\n              each slot in freeSlots(fantasyPlayerCollection, position)\n                .fts-players_section_free\n            unless context == 'show'\n              .fts-field_placeholder(\n                class=placeholderClass(fantasyTeam, position))\n                unless playersFor(fantasyPlayerCollection, position).length\n                  =l[position]\n\n      .fts-subs_section_title\n        h3=l.substitutions\n      .fts-players_section_row_wrapper\n        .fts-substitution_row\n          each slot in benchSlots\n            - var player = playerAtSlot(fantasyPlayerCollection, slot)\n            if player\n              ft-player(\n                gameweek=gameweek.id\n                fantasy-player=player.id\n                price-context=priceContext\n                context=context\n                bench-slot=slot)\n            else\n              .fts-players_section_required\n            if context != 'show'\n              .fts-field_placeholder\n                if !player\n                  = benchOrdinal(slot)\n"));
+
+  return fnJade;
 
 }));

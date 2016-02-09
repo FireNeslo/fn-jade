@@ -28,11 +28,17 @@ var reduceTemplate = template(`OBJECT.reduce(function each(nodes, VALUE, KEY){
   return nodes.concat(BLOCK);
 }, [])`)
 
-function each(object) {
+function each(object, template) {
   if(object.BLOCK.elements) {
-    return spreadElement(reduceTemplate(object).expression)
+    template = reduceTemplate(object)
+  } else {
+    template = eachTemplate(object)
   }
-  return spreadElement(eachTemplate(object).expression)
+  try {
+    return spreadElement(template.expression)
+  } catch(e) {
+    debugger
+  }
 }
 
 function extractExpression(value, compiler, expressions=[]) {
@@ -43,7 +49,6 @@ function extractExpression(value, compiler, expressions=[]) {
     ReferencedIdentifier({node}) {
       if (node.name in compiler.declared) return;
       compiler.declared[node.name] = true
-      console.log(node.name)
     },
     VariableDeclarator({node}) {
       var expression = node.init
@@ -113,8 +118,9 @@ export default class ElementCreateCompiler {
         conditions.push(extractExpression(nodes[i].val.slice(2), this))
         consequents.push(this.visitBlock(nodes[i].block))
         while(/^else if/.test(nodes[++i] && nodes[i].val)) {
+          var consequent = this.visitBlock(nodes[i].block)
           conditions.push(extractExpression(nodes[i].val.slice(7), this))
-          consequents.push(this.visitBlock(nodes[i].block))
+          consequents.push(consequent)
         }
         if(/^else/.test(nodes[i] && nodes[i].val)) {
           var alternate = this.visitBlock(nodes[i].block)
@@ -127,9 +133,15 @@ export default class ElementCreateCompiler {
           var consequent = consequents[j]
 
           if(expression) {
+            if(expression.type === 'SpreadElement') {
+              expression = expression.argument
+            }
             expression =
               conditionalExpression(condition, consequent, expression)
           } else if(alternate) {
+            if(alternate.type === 'SpreadElement') {
+              expression = alternate.argument
+            }
             expression =
               conditionalExpression(condition, consequent, alternate)
           } else {
@@ -138,7 +150,11 @@ export default class ElementCreateCompiler {
             )
           }
         }
-        result.push(spreadElement(expression))
+        try {
+          result.push(spreadElement(expression))
+        } catch(e) {
+          debugger
+        }
       } else {
         expression = this.visit(nodes[i])
         if(expression) result.push(expression)
@@ -152,7 +168,11 @@ export default class ElementCreateCompiler {
     }
     return arrayExpression(result)
   }
+  visitDoctype() {
+    return unaryExpression('void', numericLiteral(0))
+  }
   visitTag(tag, create) {
+    console.log('enter tag')
     if(tag.code) tag.block.nodes.push(tag.code)
     if(!tag.attrs.length) {
       create = callExpression(this.create, [
@@ -173,6 +193,7 @@ export default class ElementCreateCompiler {
     })
   }
   visitAttributes(attrs) {
+    console.log('visit attributes', attrs)
     return objectExpression(attrs.map(attr =>
       objectProperty(
         stringLiteral(attr.name),
@@ -181,9 +202,12 @@ export default class ElementCreateCompiler {
     ))
   }
   visitCode(code) {
+    console.log('code')
     return extractExpression(code.val, this)
   }
   visitEach(node) {
+    console.log('enter each')
+
     this.declared[node.key] = false
     this.declared[node.val] = false
     var declarations = this.declarations
