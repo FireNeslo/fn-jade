@@ -9,15 +9,13 @@ export default function vJade(template, options={}) {
 console.log(
   vJade(`
 main
-  - var posts = user.posts
-
   each post in posts
-    if post.author
-      h1= post.author
-    else if post.user
-      h1= post.user.name
-    else
-      h1 Admin
+    article
+      header
+        h3= post.title
+      section= post.content
+      footer
+        i= post.author || 'Admin'
   `, {
     pretty: true
   })

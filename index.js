@@ -35,16 +35,6 @@
     };
   }();
 
-  babelHelpers.toConsumableArray = function (arr) {
-    if (Array.isArray(arr)) {
-      for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
-
-      return arr2;
-    } else {
-      return Array.from(arr);
-    }
-  };
-
   babelHelpers;
 
   var CONDITIONAL = /^(if|else|unless)/;
@@ -266,7 +256,7 @@
     return jade.render(template, Object.assign({ compiler: ElementCreateCompiler, template: template }, options));
   }
 
-  console.log(vJade("\nmain\n  - var posts = user.posts\n\n  each post in posts\n    if post.author\n      h1= post.author\n    else if post.user\n      h1= post.user.name\n    else\n      h1 Admin\n  ", {
+  console.log(vJade("\nmain\n  each post in posts\n    article\n      header\n        h3= post.title\n      section= post.content\n      footer\n        i= post.author || 'Admin'\n  ", {
     pretty: true
   }));
 
