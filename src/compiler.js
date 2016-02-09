@@ -71,28 +71,14 @@ export default class ElementCreateCompiler {
   compile(root) {
     this.create = identifier('$')
     this.context = identifier('context')
-    this.declarations = []
+    var declarations = this.declarations = []
     this.declared = {
       global: false,
       require: false,
       window: false
     }
-    var block = [
-      returnStatement(
-        this.visit(this.node)
-      )
-    ]
-    if(this.declarations.length) {
-      block.unshift(
-        variableDeclaration('var', this.declarations),
-      )
-    }
-    this.imports = []
-    this.ast = functionDeclaration(
-      identifier('template'),
-      [this.context],
-      blockStatement(block)
-    )
+    var nodes = this.visit(this.node)
+    var block = [ returnStatement(nodes) ]
     for(var key of Object.keys(this.declared)) {
       if(this.declared[key]) {
         this.declarations.unshift(
@@ -103,6 +89,18 @@ export default class ElementCreateCompiler {
         )
       }
     }
+    if(declarations.length) {
+      block.unshift(
+        variableDeclaration('var', declarations),
+      )
+    }
+    this.imports = []
+    this.ast = functionDeclaration(
+      identifier('template'),
+      [this.context],
+      blockStatement(block)
+    )
+
     var generated = generate(this.ast, {
       retainLines: !!this.options.pretty,
       compact: !this.options.pretty

@@ -97,18 +97,14 @@
       value: function compile(root) {
         this.create = babelTypes.identifier('$');
         this.context = babelTypes.identifier('context');
-        this.declarations = [];
+        var declarations = this.declarations = [];
         this.declared = {
           global: false,
           require: false,
           window: false
         };
-        var block = [babelTypes.returnStatement(this.visit(this.node))];
-        if (this.declarations.length) {
-          block.unshift(babelTypes.variableDeclaration('var', this.declarations));
-        }
-        this.imports = [];
-        this.ast = babelTypes.functionDeclaration(babelTypes.identifier('template'), [this.context], babelTypes.blockStatement(block));
+        var nodes = this.visit(this.node);
+        var block = [babelTypes.returnStatement(nodes)];
         var _iteratorNormalCompletion = true;
         var _didIteratorError = false;
         var _iteratorError = undefined;
@@ -135,6 +131,12 @@
             }
           }
         }
+
+        if (declarations.length) {
+          block.unshift(babelTypes.variableDeclaration('var', declarations));
+        }
+        this.imports = [];
+        this.ast = babelTypes.functionDeclaration(babelTypes.identifier('template'), [this.context], babelTypes.blockStatement(block));
 
         var generated = generate(this.ast, {
           retainLines: !!this.options.pretty,
@@ -284,6 +286,10 @@
 
     return jade.render(template, Object.assign({ compiler: ElementCreateCompiler, template: template }, options));
   }
+
+  console.log(fnJade("\nif stats && stats.minutesPlayed\n", {
+    pretty: true
+  }));
 
   return fnJade;
 
