@@ -72,7 +72,11 @@ export default class ElementCreateCompiler {
     this.create = identifier('$')
     this.context = identifier('context')
     this.declarations = []
-    this.declared = {}
+    this.declared = {
+      global: false,
+      require: false,
+      window: false
+    }
     this.imports = []
     this.ast = functionDeclaration(
       identifier('template'),

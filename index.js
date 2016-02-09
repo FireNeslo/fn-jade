@@ -98,7 +98,11 @@
         this.create = babelTypes.identifier('$');
         this.context = babelTypes.identifier('context');
         this.declarations = [];
-        this.declared = {};
+        this.declared = {
+          global: false,
+          require: false,
+          window: false
+        };
         this.imports = [];
         this.ast = babelTypes.functionDeclaration(babelTypes.identifier('template'), [this.context], babelTypes.blockStatement([babelTypes.variableDeclaration('var', this.declarations), babelTypes.returnStatement(this.visit(this.node))]));
         var _iteratorNormalCompletion = true;
