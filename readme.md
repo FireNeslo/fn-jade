@@ -8,11 +8,8 @@ $ npm i -S FireNeslo/fn-jade
 ```
 
 ## Example
-```js
-var options = {
-  pretty: true
-}
-var template = `
+### template
+```jade
 main
   each post in posts
     article
@@ -21,10 +18,10 @@ main
       section= post.content
       footer
         i= post.author || 'Admin'
-        `
-
-console.log(vJade(template, options))
-
+```
+### script
+```js
+console.log(vJade(template, { pretty: true }))
 /*
 function template(context) {
   var posts = context.posts;
