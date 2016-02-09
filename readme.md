@@ -21,7 +21,7 @@ main
 ```
 ### script
 ```js
-console.log(vJade(template, { pretty: true }))
+console.log(fnJade(template, { pretty: true }))
 /*
 function template(context) {
   var posts = context.posts;
