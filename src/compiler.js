@@ -77,16 +77,21 @@ export default class ElementCreateCompiler {
       require: false,
       window: false
     }
+    var block = [
+      returnStatement(
+        this.visit(this.node)
+      )
+    ]
+    if(this.declarations.length) {
+      block.unshift(
+        variableDeclaration('var', this.declarations),
+      )
+    }
     this.imports = []
     this.ast = functionDeclaration(
       identifier('template'),
       [this.context],
-      blockStatement([
-        variableDeclaration('var', this.declarations),
-        returnStatement(
-          this.visit(this.node)
-        )
-      ])
+      blockStatement(block)
     )
     for(var key of Object.keys(this.declared)) {
       if(this.declared[key]) {

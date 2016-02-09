@@ -103,8 +103,12 @@
           require: false,
           window: false
         };
+        var block = [babelTypes.returnStatement(this.visit(this.node))];
+        if (this.declarations.length) {
+          block.unshift(babelTypes.variableDeclaration('var', this.declarations));
+        }
         this.imports = [];
-        this.ast = babelTypes.functionDeclaration(babelTypes.identifier('template'), [this.context], babelTypes.blockStatement([babelTypes.variableDeclaration('var', this.declarations), babelTypes.returnStatement(this.visit(this.node))]));
+        this.ast = babelTypes.functionDeclaration(babelTypes.identifier('template'), [this.context], babelTypes.blockStatement(block));
         var _iteratorNormalCompletion = true;
         var _didIteratorError = false;
         var _iteratorError = undefined;
@@ -285,6 +289,10 @@
 
     return jade.render(template, Object.assign({ compiler: ElementCreateCompiler, template: template }, options));
   }
+
+  console.log(fnJade("\ndoctype html\nstyle!= require('./slider.sass')\n.ft-slider-thumb(left)\n.ft-slider-rail\n.ft-slider-thumb(right)\n", {
+    pretty: true
+  }));
 
   return fnJade;
 
