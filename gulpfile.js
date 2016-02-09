@@ -11,6 +11,13 @@ gulp.task('build', function(){
     .pipe(gulp.dest('.'));
 });
 
+gulp.task('runtime', function(){
+  return gulp.src('src/index.js', {read: false})
+    .pipe(rollup(require('./rollup.config')))
+    .pipe(sourcemaps.write("."))
+    .pipe(gulp.dest('.'));
+});
+
 gulp.task('watch', ['build'], function () {
   watch('src/**/*.js', function() {
     gulp.start(['build'])
