@@ -1,6 +1,6 @@
 import {VNode, VText} from "virtual-dom"
 
-function isChildren(node={}) {
+function isChildren(node=[]) {
   return Array.isArray(node) ||
     typeof node === 'string' ||
     node.type === 'VirtualText' ||
