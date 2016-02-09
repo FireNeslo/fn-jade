@@ -8,8 +8,9 @@ import {templateLiteral, conditionalExpression} from "babel-types"
 import {logicalExpression, unaryExpression} from "babel-types"
 import {variableDeclaration, assignmentExpression} from "babel-types"
 import {VariableDeclarator, memberExpression} from "babel-types"
+import {numericLiteral} from "babel-types"
 
-
+import {js_beautify as beautify} from "js-beautify"
 import template from "babel-template";
 import generate from "babel-generator";
 import traverse from "babel-traverse"
@@ -18,19 +19,20 @@ import {parse} from "babylon"
 const CONDITIONAL = /^(if|else|unless)/
 
 var eachTemplate = template(`OBJECT.map(function each(VALUE, KEY){
+  DECLARATIONS
   return BLOCK
 })`)
 
 var reduceTemplate = template(`OBJECT.reduce(function each(nodes, VALUE, KEY){
+  DECLARATIONS
   return nodes.concat(BLOCK);
 }, [])`)
 
 function each(object) {
-  if(object.BLOCK.elements.length === 1) {
-    object.BLOCK = object.BLOCK.elements[0]
-    return spreadElement(eachTemplate(object).expression)
+  if(object.BLOCK.elements) {
+    return spreadElement(reduceTemplate(object).expression)
   }
-  return spreadElement(reduceTemplate(object).expression)
+  return spreadElement(eachTemplate(object).expression)
 }
 
 function extractExpression(value, compiler, expressions=[]) {
@@ -45,13 +47,6 @@ function extractExpression(value, compiler, expressions=[]) {
     },
     VariableDeclarator({node}) {
       var expression = node.init
-      if(expression) {
-        expression = unaryExpression('void',
-          assignmentExpression('=', node.id, node.init), 
-        )
-        expressions.push(expression)
-        node.init = null
-      }
       if(!compiler.declared[node.id.name]) {
         compiler.declared[node.id.name] = false
       }
@@ -86,7 +81,7 @@ export default class ElementCreateCompiler {
     )
     for(var key of Object.keys(this.declared)) {
       if(this.declared[key]) {
-        this.declarations.push(
+        this.declarations.unshift(
           VariableDeclarator(
             identifier(key),
             memberExpression(this.context, identifier(key))
@@ -94,7 +89,17 @@ export default class ElementCreateCompiler {
         )
       }
     }
-    return `buf.push(${JSON.stringify(generate(this.ast).code)})`
+    var generated = generate(this.ast, {
+      retainLines: !!this.options.pretty,
+      compact: !this.options.pretty
+    })
+    if(this.options.pretty) {
+      generated.code = beautify(generated.code, {
+        indent_size: 2,
+        preserve_newlines: false
+      })
+    }
+    return `buf.push(${JSON.stringify(generated.code)})`
   }
   visit(node, index, parent) {
     return this['visit' + node.type](node, index, parent);
@@ -128,7 +133,9 @@ export default class ElementCreateCompiler {
             expression =
               conditionalExpression(condition, consequent, alternate)
           } else {
-            expression = logicalExpression('&&', condition, consequent)
+            expression = conditionalExpression(condition, consequent,
+              unaryExpression('void', numericLiteral(0))
+            )
           }
         }
         result.push(spreadElement(expression))
@@ -137,15 +144,33 @@ export default class ElementCreateCompiler {
         if(expression) result.push(expression)
       }
     }
+    if(result.length === 1) {
+      if(result[0].type === 'SpreadElement') {
+        return result[0].argument
+      }
+      return result[0]
+    }
     return arrayExpression(result)
   }
-  visitTag(tag) {
+  visitTag(tag, create) {
     if(tag.code) tag.block.nodes.push(tag.code)
-    return callExpression(this.create, [
-      stringLiteral(tag.name),
-      this.visitAttributes(tag.attrs),
-      this.visitBlock(tag.block)
-    ])
+    if(!tag.attrs.length) {
+      create = callExpression(this.create, [
+        stringLiteral(tag.name),
+        this.visitBlock(tag.block)
+      ])
+    } else {
+      create = callExpression(this.create, [
+        stringLiteral(tag.name),
+        this.visitAttributes(tag.attrs),
+        this.visitBlock(tag.block)
+      ])
+    }
+    return Object.assign(create, {
+      loc: {
+        start: {line: tag.line }
+      }
+    })
   }
   visitAttributes(attrs) {
     return objectExpression(attrs.map(attr =>
@@ -158,28 +183,24 @@ export default class ElementCreateCompiler {
   visitCode(code) {
     return extractExpression(code.val, this)
   }
-  visitCodeBlock(code) {
-    if(code[0].val.indexOf('if') === 0) {
-      if(code[1] && code[1].val.indexOf('else')) {
-        return [conditionalExpression(
-          extractExpression(code[0].val.slice(2), this),
-          this.visitBlock(code[0].block),
-          this.visitBlock(code[1].block)
-        )]
-      }
-    }
-    return code.map(code => extractExpression(code.val), this)
-  }
   visitEach(node) {
     this.declared[node.key] = false
     this.declared[node.val] = false
     var declarations = this.declarations
     this.declarations = []
-    var elements = each({
-      BLOCK: this.visitBlock(node.block),
+    var elements = this.visitBlock(node.block)
+    var declare = this.declarations.length ?
+      variableDeclaration('var', this.declarations) : null
+    var elements = Object.assign(each({
+      BLOCK: elements,
+      DECLARATIONS: declare,
       OBJECT: extractExpression(node.obj, this),
       VALUE: extractExpression(node.val, this),
       KEY: extractExpression(node.key, this)
+    }), {
+      loc: {
+        start: {line: node.line}
+      }
     })
     this.declarations = declarations
     return elements

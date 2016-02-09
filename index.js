@@ -1,8 +1,8 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('jade'), require('babel-types'), require('babel-template'), require('babel-generator'), require('babel-traverse'), require('babylon')) :
-  typeof define === 'function' && define.amd ? define(['jade', 'babel-types', 'babel-template', 'babel-generator', 'babel-traverse', 'babylon'], factory) :
-  (global.vJade = factory(global.jade,global.babelTypes,global.template,global.generate,global.traverse,global.babylon));
-}(this, function (jade,babelTypes,template,generate,traverse,babylon) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('jade'), require('babel-types'), require('js-beautify'), require('babel-template'), require('babel-generator'), require('babel-traverse'), require('babylon')) :
+  typeof define === 'function' && define.amd ? define(['jade', 'babel-types', 'js-beautify', 'babel-template', 'babel-generator', 'babel-traverse', 'babylon'], factory) :
+  (global.vJade = factory(global.jade,global.babelTypes,global.jsBeautify,global.template,global.generate,global.traverse,global.babylon));
+}(this, function (jade,babelTypes,jsBeautify,template,generate,traverse,babylon) { 'use strict';
 
   jade = 'default' in jade ? jade['default'] : jade;
   template = 'default' in template ? template['default'] : template;
@@ -35,20 +35,29 @@
     };
   }();
 
+  babelHelpers.toConsumableArray = function (arr) {
+    if (Array.isArray(arr)) {
+      for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
+
+      return arr2;
+    } else {
+      return Array.from(arr);
+    }
+  };
+
   babelHelpers;
 
   var CONDITIONAL = /^(if|else|unless)/;
 
-  var eachTemplate = template("OBJECT.map(function each(VALUE, KEY){\n  return BLOCK\n})");
+  var eachTemplate = template("OBJECT.map(function each(VALUE, KEY){\n  DECLARATIONS\n  return BLOCK\n})");
 
-  var reduceTemplate = template("OBJECT.reduce(function each(nodes, VALUE, KEY){\n  return nodes.concat(BLOCK);\n}, [])");
+  var reduceTemplate = template("OBJECT.reduce(function each(nodes, VALUE, KEY){\n  DECLARATIONS\n  return nodes.concat(BLOCK);\n}, [])");
 
   function each(object) {
-    if (object.BLOCK.elements.length === 1) {
-      object.BLOCK = object.BLOCK.elements[0];
-      return babelTypes.spreadElement(eachTemplate(object).expression);
+    if (object.BLOCK.elements) {
+      return babelTypes.spreadElement(reduceTemplate(object).expression);
     }
-    return babelTypes.spreadElement(reduceTemplate(object).expression);
+    return babelTypes.spreadElement(eachTemplate(object).expression);
   }
 
   function extractExpression(value, compiler) {
@@ -71,11 +80,6 @@
         var node = _ref3.node;
 
         var expression = node.init;
-        if (expression) {
-          expression = babelTypes.unaryExpression('void', babelTypes.assignmentExpression('=', node.id, node.init));
-          expressions.push(expression);
-          node.init = null;
-        }
         if (!compiler.declared[node.id.name]) {
           compiler.declared[node.id.name] = false;
         }
@@ -111,7 +115,7 @@
             var key = _step.value;
 
             if (this.declared[key]) {
-              this.declarations.push(babelTypes.VariableDeclarator(babelTypes.identifier(key), babelTypes.memberExpression(this.context, babelTypes.identifier(key))));
+              this.declarations.unshift(babelTypes.VariableDeclarator(babelTypes.identifier(key), babelTypes.memberExpression(this.context, babelTypes.identifier(key))));
             }
           }
         } catch (err) {
@@ -129,7 +133,17 @@
           }
         }
 
-        return "buf.push(" + JSON.stringify(generate(this.ast).code) + ")";
+        var generated = generate(this.ast, {
+          retainLines: !!this.options.pretty,
+          compact: !this.options.pretty
+        });
+        if (this.options.pretty) {
+          generated.code = jsBeautify.js_beautify(generated.code, {
+            indent_size: 2,
+            preserve_newlines: false
+          });
+        }
+        return "buf.push(" + JSON.stringify(generated.code) + ")";
       }
     }, {
       key: "visit",
@@ -168,7 +182,7 @@
               } else if (alternate) {
                 expression = babelTypes.conditionalExpression(condition, consequent, alternate);
               } else {
-                expression = babelTypes.logicalExpression('&&', condition, consequent);
+                expression = babelTypes.conditionalExpression(condition, consequent, babelTypes.unaryExpression('void', babelTypes.numericLiteral(0)));
               }
             }
             result.push(babelTypes.spreadElement(expression));
@@ -177,13 +191,28 @@
             if (expression) result.push(expression);
           }
         }
+        if (result.length === 1) {
+          if (result[0].type === 'SpreadElement') {
+            return result[0].argument;
+          }
+          return result[0];
+        }
         return babelTypes.arrayExpression(result);
       }
     }, {
       key: "visitTag",
-      value: function visitTag(tag) {
+      value: function visitTag(tag, create) {
         if (tag.code) tag.block.nodes.push(tag.code);
-        return babelTypes.callExpression(this.create, [babelTypes.stringLiteral(tag.name), this.visitAttributes(tag.attrs), this.visitBlock(tag.block)]);
+        if (!tag.attrs.length) {
+          create = babelTypes.callExpression(this.create, [babelTypes.stringLiteral(tag.name), this.visitBlock(tag.block)]);
+        } else {
+          create = babelTypes.callExpression(this.create, [babelTypes.stringLiteral(tag.name), this.visitAttributes(tag.attrs), this.visitBlock(tag.block)]);
+        }
+        return Object.assign(create, {
+          loc: {
+            start: { line: tag.line }
+          }
+        });
       }
     }, {
       key: "visitAttributes",
@@ -200,29 +229,24 @@
         return extractExpression(code.val, this);
       }
     }, {
-      key: "visitCodeBlock",
-      value: function visitCodeBlock(code) {
-        if (code[0].val.indexOf('if') === 0) {
-          if (code[1] && code[1].val.indexOf('else')) {
-            return [babelTypes.conditionalExpression(extractExpression(code[0].val.slice(2), this), this.visitBlock(code[0].block), this.visitBlock(code[1].block))];
-          }
-        }
-        return code.map(function (code) {
-          return extractExpression(code.val);
-        }, this);
-      }
-    }, {
       key: "visitEach",
       value: function visitEach(node) {
         this.declared[node.key] = false;
         this.declared[node.val] = false;
         var declarations = this.declarations;
         this.declarations = [];
-        var elements = each({
-          BLOCK: this.visitBlock(node.block),
+        var elements = this.visitBlock(node.block);
+        var declare = this.declarations.length ? babelTypes.variableDeclaration('var', this.declarations) : null;
+        var elements = Object.assign(each({
+          BLOCK: elements,
+          DECLARATIONS: declare,
           OBJECT: extractExpression(node.obj, this),
           VALUE: extractExpression(node.val, this),
           KEY: extractExpression(node.key, this)
+        }), {
+          loc: {
+            start: { line: node.line }
+          }
         });
         this.declarations = declarations;
         return elements;
@@ -239,10 +263,12 @@
   function vJade(template) {
     var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
-    return jade.render(template, Object.assign({ compiler: ElementCreateCompiler }, options));
+    return jade.render(template, Object.assign({ compiler: ElementCreateCompiler, template: template }, options));
   }
 
-  console.log(vJade("\nmain(role=\"main\")\n  each post in posts\n    - var title = post.title\n    article\n      header: h3= post.title\n      section= post.content\n      footer: i= post.author || 'Admin'\n  "));
+  console.log(vJade("\nmain\n  - var posts = user.posts\n\n  each post in posts\n    if post.author\n      h1= post.author\n    else if post.user\n      h1= post.user.name\n    else\n      h1 Admin\n  ", {
+    pretty: true
+  }));
 
   return vJade;
 
