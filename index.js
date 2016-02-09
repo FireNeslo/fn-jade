@@ -147,6 +147,7 @@
     }, {
       key: "visit",
       value: function visit(node, index, parent) {
+        if(!this['visit' + node.type]) console.log("Not found: visit" + node.type)
         return this['visit' + node.type](node, index, parent);
       }
     }, {
@@ -275,6 +276,11 @@
       key: "visitText",
       value: function visitText(node) {
         return extractExpression('`' + node.val.replace(/#{/g, '${') + '`', this);
+      }
+    }, {
+      key: "visitDoctype",
+      value: function visitDoctype() {
+        return babelTypes.unaryExpression('void', babelTypes.numericLiteral(0))
       }
     }]);
     return ElementCreateCompiler;
