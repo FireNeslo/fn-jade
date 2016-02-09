@@ -1,8 +1,8 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('jade'), require('babel-types'), require('js-beautify'), require('babel-template'), require('babel-generator'), require('babel-traverse'), require('babylon')) :
-  typeof define === 'function' && define.amd ? define(['jade', 'babel-types', 'js-beautify', 'babel-template', 'babel-generator', 'babel-traverse', 'babylon'], factory) :
-  (global.vJade = factory(global.jade,global.babelTypes,global.jsBeautify,global.template,global.generate,global.traverse,global.babylon));
-}(this, function (jade,babelTypes,jsBeautify,template,generate,traverse,babylon) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('jade'), require('virtual-dom'), require('babel-types'), require('js-beautify'), require('babel-template'), require('babel-generator'), require('babel-traverse'), require('babylon')) :
+  typeof define === 'function' && define.amd ? define(['jade', 'virtual-dom', 'babel-types', 'js-beautify', 'babel-template', 'babel-generator', 'babel-traverse', 'babylon'], factory) :
+  (global.vJade = factory(global.jade,global.virtualDom,global.babelTypes,global.jsBeautify,global.template,global.generate,global.traverse,global.babylon));
+}(this, function (jade,virtualDom,babelTypes,jsBeautify,template,generate,traverse,babylon) { 'use strict';
 
   jade = 'default' in jade ? jade['default'] : jade;
   template = 'default' in template ? template['default'] : template;
@@ -255,10 +255,6 @@
 
     return jade.render(template, Object.assign({ compiler: ElementCreateCompiler, template: template }, options));
   }
-
-  console.log(vJade("\nmain\n  each post in posts\n    article\n      header\n        h3= post.title\n      section= post.content\n      footer\n        i= post.author || 'Admin'\n  ", {
-    pretty: true
-  }));
 
   return vJade;
 
