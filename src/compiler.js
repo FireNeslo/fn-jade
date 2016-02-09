@@ -181,7 +181,6 @@ export default class ElementCreateCompiler {
     return unaryExpression('void', numericLiteral(0))
   }
   visitTag(tag, create) {
-    console.log('enter tag')
     if(tag.code) tag.block.nodes.push(tag.code)
     if(!tag.attrs.length) {
       create = callExpression(this.create, [
@@ -202,7 +201,6 @@ export default class ElementCreateCompiler {
     })
   }
   visitAttributes(attrs) {
-    console.log('visit attributes', attrs)
     return objectExpression(attrs.map(attr =>
       objectProperty(
         stringLiteral(attr.name),
@@ -211,12 +209,9 @@ export default class ElementCreateCompiler {
     ))
   }
   visitCode(code) {
-    console.log('code')
     return extractExpression(code.val, this)
   }
   visitEach(node) {
-    console.log('enter each')
-
     this.declared[node.key] = false
     this.declared[node.val] = false
     var declarations = this.declarations

@@ -221,7 +221,6 @@
     }, {
       key: "visitTag",
       value: function visitTag(tag, create) {
-        console.log('enter tag');
         if (tag.code) tag.block.nodes.push(tag.code);
         if (!tag.attrs.length) {
           create = babelTypes.callExpression(this.create, [babelTypes.stringLiteral(tag.name), this.visitBlock(tag.block)]);
@@ -239,7 +238,6 @@
       value: function visitAttributes(attrs) {
         var _this = this;
 
-        console.log('visit attributes', attrs);
         return babelTypes.objectExpression(attrs.map(function (attr) {
           return babelTypes.objectProperty(babelTypes.stringLiteral(attr.name), extractExpression(attr.val, _this));
         }));
@@ -247,14 +245,11 @@
     }, {
       key: "visitCode",
       value: function visitCode(code) {
-        console.log('code');
         return extractExpression(code.val, this);
       }
     }, {
       key: "visitEach",
       value: function visitEach(node) {
-        console.log('enter each');
-
         this.declared[node.key] = false;
         this.declared[node.val] = false;
         var declarations = this.declarations;
@@ -289,10 +284,6 @@
 
     return jade.render(template, Object.assign({ compiler: ElementCreateCompiler, template: template }, options));
   }
-
-  console.log(fnJade("\ndoctype html\nstyle!= require('./slider.sass')\n.ft-slider-thumb(left)\n.ft-slider-rail\n.ft-slider-thumb(right)\n", {
-    pretty: true
-  }));
 
   return fnJade;
 
