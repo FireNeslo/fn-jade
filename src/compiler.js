@@ -121,24 +121,27 @@ export default class ElementCreateCompiler {
   visitBlock(block) {
     try {
       this.depth++
-      this.chain[this.depth] = {}
-      console.log('depth', this.depth)
+      this.chain[this.depth] = []
       var result = block.nodes.map(this.visit, this)
-      console.log('currentChain', this.currentChain)
-      for (var _if of Object.keys(this.currentChain)) {
-        var consequent = this.visitBlock(block.nodes[_if].block)
-        var alternate = arrayExpression([])
-        if(this.currentChain[_if]) {
-          alternate = this.visitBlock(block.nodes[this.currentChain[_if]].block)
-        }
-        result[_if] = spreadElement(conditionalExpression(
-          result[_if], consequent, alternate
-        ))
+      for(var ifs of this.currentChain) {
+        result[ifs[0]] = spreadElement(this.makeCondition(result, block.nodes, ifs))
       }
       this.depth--
       return arrayExpression(result.filter(a => a))
     } catch(e) {
       console.error(e.stack)
+    }
+  }
+  makeCondition(result, nodes, indices) {
+    if(!indices[0]) return arrayExpression([])
+    var condition = result[indices[0]]
+    result[indices[0]] = null
+    var consequent = this.visitBlock(nodes[indices[0]].block)
+    if(condition) {
+      var alternate = this.makeCondition(result, nodes, indices.slice(1))
+      return conditionalExpression(condition, consequent, alternate)
+    } else if(indices[0]) {
+      return consequent
     }
   }
   visitDoctype() {
@@ -173,13 +176,15 @@ export default class ElementCreateCompiler {
   }
   visitCode(code, index) {
     var isPureElse = false
-    if(/^else/.test(code.val)) {
-      this.currentChain[Object.keys(this.currentChain).pop()] = index
-      isPureElse = true
-    }
-    if(/^(else if |if )/.test(code.val)) {
-      this.currentChain[index] = null
-      return extractExpression(code.val.split('if').slice(1).join(''))
+    if(/^if /.test(code.val)) {
+      this.currentChain.push([index])
+      return extractExpression(code.val.slice(2), this)
+    } else if (/^else if /.test(code.val)) {
+      this.currentChain[this.currentChain.length - 1].push(index)
+      return extractExpression(code.val.slice(7), this)
+    } else if (/^else/.test(code.val)) {
+      this.currentChain[this.currentChain.length - 1].push(index)
+      return
     }
     if(isPureElse) return
     return extractExpression(code.val, this)
