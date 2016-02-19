@@ -122,17 +122,21 @@ export default class ElementCreateCompiler {
     try {
       this.depth++
       this.chain[this.depth] = {}
+      console.log('depth', this.depth)
       var result = block.nodes.map(this.visit, this)
-      for (var _if of Object.keys(this.chain[this.depth])) {
-        console.log("result ", _if, result[_if])
+      console.log('currentChain', this.currentChain)
+      for (var _if of Object.keys(this.currentChain)) {
+        var consequent = this.visitBlock(block.nodes[_if].block)
+        var alternate = arrayExpression([])
+        if(this.currentChain[_if]) {
+          alternate = this.visitBlock(block.nodes[this.currentChain[_if]].block)
+        }
         result[_if] = spreadElement(conditionalExpression(
-          result[_if],
-          this.visitBlock(block.nodes[_if].block),
-          arrayExpression([])
+          result[_if], consequent, alternate
         ))
       }
       this.depth--
-      return arrayExpression(result)
+      return arrayExpression(result.filter(a => a))
     } catch(e) {
       console.error(e.stack)
     }
@@ -168,12 +172,17 @@ export default class ElementCreateCompiler {
     ))
   }
   visitCode(code, index) {
-    if(/^if /.test(code.val)) {
-      this.chain[this.depth][index] = null
-      return extractExpression(code.val.slice(2))
-    } else {
-      return extractExpression(code.val, this)
+    var isPureElse = false
+    if(/^else/.test(code.val)) {
+      this.currentChain[Object.keys(this.currentChain).pop()] = index
+      isPureElse = true
     }
+    if(/^(else if |if )/.test(code.val)) {
+      this.currentChain[index] = null
+      return extractExpression(code.val.split('if').slice(1).join(''))
+    }
+    if(isPureElse) return
+    return extractExpression(code.val, this)
   }
   visitEach(node) {
     this.declared[node.key] = false
@@ -199,5 +208,8 @@ export default class ElementCreateCompiler {
   }
   visitText(node) {
     return extractExpression('`'+node.val.replace(/#{/g, '${')+'`', this)
+  }
+  get currentChain() {
+    return this.chain[this.depth]
   }
 }
