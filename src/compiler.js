@@ -69,6 +69,8 @@ export default class ElementCreateCompiler {
   	this.options = options;
   }
   compile(root) {
+    this.depth = 0
+    this.chain = []
     this.create = identifier('$')
     this.context = identifier('context')
     var declarations = this.declarations = []
@@ -117,63 +119,23 @@ export default class ElementCreateCompiler {
     return this['visit' + node.type](node, index, parent);
   }
   visitBlock(block) {
-    var nodes = block.nodes, result = []
-    var conditions = [], consequents = [], expression
-    for(var i = 0; i < nodes.length; i++) {
-      if(CONDITIONAL.test(nodes[i].val)) {
-        conditions = [], consequents = []
-        conditions.push(extractExpression(nodes[i].val.slice(2), this))
-        consequents.push(this.visitBlock(nodes[i].block))
-        while(/^else if/.test(nodes[++i] && nodes[i].val)) {
-          var consequent = this.visitBlock(nodes[i].block)
-          conditions.push(extractExpression(nodes[i].val.slice(7), this))
-          consequents.push(consequent)
-        }
-        if(/^else/.test(nodes[i] && nodes[i].val)) {
-          var alternate = this.visitBlock(nodes[i].block)
-        } else {
-          i -= 1
-        }
-
-        for (var j = conditions.length-1; j >= 0; j--) {
-          var condition =  conditions[j]
-          var consequent = consequents[j]
-
-          if(expression) {
-            if(expression.type === 'SpreadElement') {
-              expression = expression.argument
-            }
-            expression =
-              conditionalExpression(condition, consequent, expression)
-          } else if(alternate) {
-            if(alternate.type === 'SpreadElement') {
-              expression = alternate.argument
-            }
-            expression =
-              conditionalExpression(condition, consequent, alternate)
-          } else {
-            expression = conditionalExpression(condition, consequent,
-              unaryExpression('void', numericLiteral(0))
-            )
-          }
-        }
-        try {
-          result.push(spreadElement(expression))
-        } catch(e) {
-          debugger
-        }
-      } else {
-        expression = this.visit(nodes[i])
-        if(expression) result.push(expression)
+    try {
+      this.depth++
+      this.chain[this.depth] = {}
+      var result = block.nodes.map(this.visit, this)
+      for (var _if of Object.keys(this.chain[this.depth])) {
+        console.log("result ", _if, result[_if])
+        result[_if] = spreadElement(conditionalExpression(
+          result[_if],
+          this.visitBlock(block.nodes[_if].block),
+          arrayExpression([])
+        ))
       }
+      this.depth--
+      return arrayExpression(result)
+    } catch(e) {
+      console.error(e.stack)
     }
-    if(result.length === 1) {
-      if(result[0].type === 'SpreadElement') {
-        return result[0].argument
-      }
-      return result[0]
-    }
-    return arrayExpression(result)
   }
   visitDoctype() {
     return unaryExpression('void', numericLiteral(0))
@@ -205,8 +167,13 @@ export default class ElementCreateCompiler {
       )
     ))
   }
-  visitCode(code) {
-    return extractExpression(code.val, this)
+  visitCode(code, index) {
+    if(/^if /.test(code.val)) {
+      this.chain[this.depth][index] = null
+      return extractExpression(code.val.slice(2))
+    } else {
+      return extractExpression(code.val, this)
+    }
   }
   visitEach(node) {
     this.declared[node.key] = false
