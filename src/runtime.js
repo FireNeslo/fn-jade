@@ -4,7 +4,6 @@ export default function element(tag, attributes, children) {
   if(!Array.isArray(children)) {
     children = [children]
   }
-  console.log(tag, attributes)
   if(Array.isArray(attributes.class)) {
     attributes.class = attributes.class.join(' ')
   }

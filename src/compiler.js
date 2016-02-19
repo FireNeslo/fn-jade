@@ -5,7 +5,6 @@ import {arrayExpression, callExpression} from "babel-types"
 import {blockStatement, returnStatement} from "babel-types"
 import {stringLiteral, identifier} from "babel-types"
 import {templateLiteral, conditionalExpression} from "babel-types"
-import {logicalExpression, unaryExpression} from "babel-types"
 import {variableDeclaration, assignmentExpression} from "babel-types"
 import {VariableDeclarator, memberExpression} from "babel-types"
 import {numericLiteral} from "babel-types"
@@ -18,12 +17,12 @@ import {parse} from "babylon"
 
 const CONDITIONAL = /^(if|else|unless)/
 
-var eachTemplate = template(`OBJECT.map(function each(VALUE, KEY){
+var eachTemplate = template(`OBJECT.map((VALUE, KEY)=> {
   DECLARATIONS
   return BLOCK
 })`)
 
-var reduceTemplate = template(`OBJECT.reduce(function each(nodes, VALUE, KEY){
+var reduceTemplate = template(`OBJECT.reduce((nodes, VALUE, KEY)=> {
   DECLARATIONS
   return nodes.concat(BLOCK);
 }, [])`)
@@ -130,10 +129,11 @@ export default class ElementCreateCompiler {
       return arrayExpression(result.filter(a => a))
     } catch(e) {
       console.error(e.stack)
+      return arrayExpression([])
     }
   }
   makeCondition(result, nodes, indices) {
-    if(!indices[0]) return arrayExpression([])
+    if(indices[0] == null) return arrayExpression([])
     var condition = result[indices[0]]
     result[indices[0]] = null
     var consequent = this.visitBlock(nodes[indices[0]].block)
@@ -145,7 +145,10 @@ export default class ElementCreateCompiler {
     }
   }
   visitDoctype() {
-    return unaryExpression('void', numericLiteral(0))
+    return
+  }
+  visitComment() {
+    return
   }
   visitTag(tag, create) {
     if(tag.code) tag.block.nodes.push(tag.code)
