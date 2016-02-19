@@ -192,10 +192,16 @@ export default class ElementCreateCompiler {
     })
   }
   visitAttributes(attrs) {
-    return objectExpression(attrs.map(attr =>
+    var map = {}
+    for(var attr of attrs) {
+      map[attr.name] || (map[attr.name] = [])
+      map[attr.name].push(extractExpression(attr.val, this))
+    }
+    var ret = []
+    return objectExpression(Object.keys(map).map(attr =>
       objectProperty(
-        stringLiteral(attr.name),
-        extractExpression(attr.val, this)
+        stringLiteral(attr),
+        map[attr].length > 1 ? arrayExpression(map[attr]) : map[attr][0]
       )
     ))
   }

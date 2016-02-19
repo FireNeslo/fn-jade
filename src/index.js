@@ -1,6 +1,10 @@
-import jade from "jade"
-import compiler from "./compiler"
+require('babel-core/register')
+global.babelHelpers = require('babel-helpers')
+var jade = require("jade")
+var compiler = require("./compiler").default
 
-export default function fnJade(template, options={}) {
+module.exports = function fnJade(template, options) {
+  options || (options = {})
   return jade.render(template, Object.assign({compiler, template}, options))
 }
+
