@@ -3,11 +3,11 @@ import {spreadElement, functionDeclaration} from "babel-types"
 import {objectExpression, objectProperty} from "babel-types"
 import {arrayExpression, callExpression} from "babel-types"
 import {blockStatement, returnStatement} from "babel-types"
-import {stringLiteral, identifier} from "babel-types"
+import {stringLiteral, identifier, unaryExpression} from "babel-types"
 import {templateLiteral, conditionalExpression} from "babel-types"
 import {variableDeclaration, assignmentExpression} from "babel-types"
 import {VariableDeclarator, memberExpression} from "babel-types"
-import {numericLiteral} from "babel-types"
+import {numericLiteral, assignmentPattern} from "babel-types"
 
 import {js_beautify as beautify} from "js-beautify"
 import template from "babel-template";
@@ -18,12 +18,10 @@ import {parse} from "babylon"
 const CONDITIONAL = /^(if|else|unless)/
 
 var eachTemplate = template(`OBJECT.map((VALUE, KEY)=> {
-  DECLARATIONS
   return BLOCK
 })`)
 
 var reduceTemplate = template(`OBJECT.reduce((nodes, VALUE, KEY)=> {
-  DECLARATIONS
   return nodes.concat(BLOCK);
 }, [])`)
 
@@ -41,19 +39,28 @@ function each(object, template) {
 }
 
 function extractExpression(value, compiler, expressions=[]) {
-  traverse(parse(';'+value), {
-    ExpressionStatement({node}) {
-      expressions.push(node.expression)
-    },
+  if(value && value.trim && /^{[\s\S]*}$/m.test(value.trim())) {
+    value = '(' + value + ')'
+  }
+  var program = parse('; '+value)
+
+  traverse(program, {
     ReferencedIdentifier({node}) {
       if (node.name in compiler.declared) return;
       compiler.declared[node.name] = true
+    }
+  })
+  traverse(program, {
+    ExpressionStatement({node}) {
+      expressions.push(node.expression)
     },
     VariableDeclarator({node}) {
-      var expression = node.init
+      var expression = assignmentExpression('=', node.id, node.init)
+      delete node.init
       if(!compiler.declared[node.id.name]) {
         compiler.declared[node.id.name] = false
       }
+      expressions.push(unaryExpression('void', expression))
       compiler.declarations.push(node)
     }
   })
@@ -71,12 +78,15 @@ export default class ElementCreateCompiler {
     this.depth = 0
     this.chain = []
     this.create = identifier('$')
-    this.context = identifier('context')
+    this.context = identifier('$ctx$')
     var declarations = this.declarations = []
     this.declared = {
+      Array: false,
+      Object: false,
       global: false,
       require: false,
-      window: false
+      window: false,
+      Date: false
     }
     var nodes = this.visit(this.node)
     var block = [ returnStatement(nodes) ]
@@ -98,7 +108,7 @@ export default class ElementCreateCompiler {
     this.imports = []
     this.ast = functionDeclaration(
       identifier('template'),
-      [this.context],
+      [assignmentPattern(this.context, identifier('this'))],
       blockStatement(block)
     )
 
@@ -115,7 +125,12 @@ export default class ElementCreateCompiler {
     return `buf.push(${JSON.stringify(generated.code)})`
   }
   visit(node, index, parent) {
-    return this['visit' + node.type](node, index, parent);
+    try {
+      return this['visit' + node.type](node, index, parent);
+    } catch(e) {
+      console.error(e.stack)
+      return arrayExpression([])
+    }
   }
   visitBlock(block) {
     try {
@@ -193,26 +208,19 @@ export default class ElementCreateCompiler {
     return extractExpression(code.val, this)
   }
   visitEach(node) {
-    this.declared[node.key] = false
-    this.declared[node.val] = false
-    var declarations = this.declarations
-    this.declarations = []
     var elements = this.visitBlock(node.block)
-    var declare = this.declarations.length ?
-      variableDeclaration('var', this.declarations) : null
-    var elements = Object.assign(each({
+    var object = extractExpression(node.obj, this)
+
+    return Object.assign(each({
       BLOCK: elements,
-      DECLARATIONS: declare,
-      OBJECT: extractExpression(node.obj, this),
-      VALUE: extractExpression(node.val, this),
-      KEY: extractExpression(node.key, this)
+      OBJECT: object,
+      VALUE: identifier(node.val),
+      KEY: identifier(node.key)
     }), {
       loc: {
         start: {line: node.line}
       }
     })
-    this.declarations = declarations
-    return elements
   }
   visitText(node) {
     return extractExpression('`'+node.val.replace(/#{/g, '${')+'`', this)
