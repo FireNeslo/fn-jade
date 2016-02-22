@@ -37,11 +37,9 @@
 
   babelHelpers;
 
-  var CONDITIONAL = /^(if|else|unless)/;
+  var eachTemplate = template("OBJECT.map((VALUE, KEY)=> {\n  return BLOCK\n})");
 
-  var eachTemplate = template("OBJECT.map(function each(VALUE, KEY){\n  DECLARATIONS\n  return BLOCK\n})");
-
-  var reduceTemplate = template("OBJECT.reduce(function each(nodes, VALUE, KEY){\n  DECLARATIONS\n  return nodes.concat(BLOCK);\n}, [])");
+  var reduceTemplate = template("OBJECT.reduce((nodes, VALUE, KEY)=> {\n  return nodes.concat(BLOCK);\n}, [])");
 
   function each(object, template) {
     if (object.BLOCK.elements) {
@@ -59,25 +57,34 @@
   function extractExpression(value, compiler) {
     var expressions = arguments.length <= 2 || arguments[2] === undefined ? [] : arguments[2];
 
-    traverse(babylon.parse(';' + value), {
-      ExpressionStatement: function ExpressionStatement(_ref) {
-        var node = _ref.node;
+    if (value && value.trim && /^{[\s\S]*}$/m.test(value.trim())) {
+      value = '(' + value + ')';
+    }
+    var program = babylon.parse('; ' + value);
 
-        expressions.push(node.expression);
-      },
-      ReferencedIdentifier: function ReferencedIdentifier(_ref2) {
-        var node = _ref2.node;
+    traverse(program, {
+      ReferencedIdentifier: function ReferencedIdentifier(_ref) {
+        var node = _ref.node;
 
         if (node.name in compiler.declared) return;
         compiler.declared[node.name] = true;
+      }
+    });
+    traverse(program, {
+      ExpressionStatement: function ExpressionStatement(_ref2) {
+        var node = _ref2.node;
+
+        expressions.push(node.expression);
       },
       VariableDeclarator: function VariableDeclarator(_ref3) {
         var node = _ref3.node;
 
-        var expression = node.init;
+        var expression = babelTypes.assignmentExpression('=', node.id, node.init);
+        delete node.init;
         if (!compiler.declared[node.id.name]) {
           compiler.declared[node.id.name] = false;
         }
+        expressions.push(babelTypes.unaryExpression('void', expression));
         compiler.declarations.push(node);
       }
     });
@@ -95,13 +102,18 @@
     babelHelpers.createClass(ElementCreateCompiler, [{
       key: "compile",
       value: function compile(root) {
+        this.depth = 0;
+        this.chain = [];
         this.create = babelTypes.identifier('$');
-        this.context = babelTypes.identifier('context');
+        this.context = babelTypes.identifier('$ctx$');
         var declarations = this.declarations = [];
         this.declared = {
+          Array: false,
+          Object: false,
           global: false,
           require: false,
-          window: false
+          window: false,
+          Date: false
         };
         var nodes = this.visit(this.node);
         var block = [babelTypes.returnStatement(nodes)];
@@ -136,7 +148,7 @@
           block.unshift(babelTypes.variableDeclaration('var', declarations));
         }
         this.imports = [];
-        this.ast = babelTypes.functionDeclaration(babelTypes.identifier('template'), [this.context], babelTypes.blockStatement(block));
+        this.ast = babelTypes.functionDeclaration(babelTypes.identifier('template'), [babelTypes.assignmentPattern(this.context, babelTypes.identifier('this'))], babelTypes.blockStatement(block));
 
         var generated = generate(this.ast, {
           retainLines: !!this.options.pretty,
@@ -153,72 +165,77 @@
     }, {
       key: "visit",
       value: function visit(node, index, parent) {
-        return this['visit' + node.type](node, index, parent);
+        try {
+          return this['visit' + node.type](node, index, parent);
+        } catch (e) {
+          console.error(e.stack);
+          return babelTypes.arrayExpression([]);
+        }
       }
     }, {
       key: "visitBlock",
       value: function visitBlock(block) {
-        var nodes = block.nodes,
-            result = [];
-        var conditions = [],
-            consequents = [],
-            expression;
-        for (var i = 0; i < nodes.length; i++) {
-          if (CONDITIONAL.test(nodes[i].val)) {
-            conditions = [], consequents = [];
-            conditions.push(extractExpression(nodes[i].val.slice(2), this));
-            consequents.push(this.visitBlock(nodes[i].block));
-            while (/^else if/.test(nodes[++i] && nodes[i].val)) {
-              var consequent = this.visitBlock(nodes[i].block);
-              conditions.push(extractExpression(nodes[i].val.slice(7), this));
-              consequents.push(consequent);
-            }
-            if (/^else/.test(nodes[i] && nodes[i].val)) {
-              var alternate = this.visitBlock(nodes[i].block);
-            } else {
-              i -= 1;
-            }
+        try {
+          this.depth++;
+          this.chain[this.depth] = [];
+          var result = block.nodes.map(this.visit, this);
+          var _iteratorNormalCompletion2 = true;
+          var _didIteratorError2 = false;
+          var _iteratorError2 = undefined;
 
-            for (var j = conditions.length - 1; j >= 0; j--) {
-              var condition = conditions[j];
-              var consequent = consequents[j];
+          try {
+            for (var _iterator2 = this.currentChain[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+              var ifs = _step2.value;
 
-              if (expression) {
-                if (expression.type === 'SpreadElement') {
-                  expression = expression.argument;
-                }
-                expression = babelTypes.conditionalExpression(condition, consequent, expression);
-              } else if (alternate) {
-                if (alternate.type === 'SpreadElement') {
-                  expression = alternate.argument;
-                }
-                expression = babelTypes.conditionalExpression(condition, consequent, alternate);
-              } else {
-                expression = babelTypes.conditionalExpression(condition, consequent, babelTypes.unaryExpression('void', babelTypes.numericLiteral(0)));
+              result[ifs[0]] = babelTypes.spreadElement(this.makeCondition(result, block.nodes, ifs));
+            }
+          } catch (err) {
+            _didIteratorError2 = true;
+            _iteratorError2 = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                _iterator2.return();
+              }
+            } finally {
+              if (_didIteratorError2) {
+                throw _iteratorError2;
               }
             }
-            try {
-              result.push(babelTypes.spreadElement(expression));
-            } catch (e) {
-              debugger;
-            }
-          } else {
-            expression = this.visit(nodes[i]);
-            if (expression) result.push(expression);
           }
+
+          this.depth--;
+          return babelTypes.arrayExpression(result.filter(function (a) {
+            return a;
+          }));
+        } catch (e) {
+          console.error(e.stack);
+          return babelTypes.arrayExpression([]);
         }
-        if (result.length === 1) {
-          if (result[0].type === 'SpreadElement') {
-            return result[0].argument;
-          }
-          return result[0];
+      }
+    }, {
+      key: "makeCondition",
+      value: function makeCondition(result, nodes, indices) {
+        if (indices[0] == null) return babelTypes.arrayExpression([]);
+        var condition = result[indices[0]];
+        result[indices[0]] = null;
+        var consequent = this.visitBlock(nodes[indices[0]].block);
+        if (condition) {
+          var alternate = this.makeCondition(result, nodes, indices.slice(1));
+          return babelTypes.conditionalExpression(condition, consequent, alternate);
+        } else if (indices[0]) {
+          return consequent;
         }
-        return babelTypes.arrayExpression(result);
       }
     }, {
       key: "visitDoctype",
       value: function visitDoctype() {
-        return babelTypes.unaryExpression('void', babelTypes.numericLiteral(0));
+        return;
+      }
+    }, {
+      key: "visitComment",
+      value: function visitComment() {
+        return;
       }
     }, {
       key: "visitTag",
@@ -234,52 +251,88 @@
     }, {
       key: "visitAttributes",
       value: function visitAttributes(attrs) {
-        var _this = this;
+        var map = {};
+        var _iteratorNormalCompletion3 = true;
+        var _didIteratorError3 = false;
+        var _iteratorError3 = undefined;
 
-        return babelTypes.objectExpression(attrs.map(function (attr) {
-          return babelTypes.objectProperty(babelTypes.stringLiteral(attr.name), extractExpression(attr.val, _this));
+        try {
+          for (var _iterator3 = attrs[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+            var attr = _step3.value;
+
+            map[attr.name] || (map[attr.name] = []);
+            map[attr.name].push(extractExpression(attr.val, this));
+          }
+        } catch (err) {
+          _didIteratorError3 = true;
+          _iteratorError3 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion3 && _iterator3.return) {
+              _iterator3.return();
+            }
+          } finally {
+            if (_didIteratorError3) {
+              throw _iteratorError3;
+            }
+          }
+        }
+
+        var ret = [];
+        return babelTypes.objectExpression(Object.keys(map).map(function (attr) {
+          return babelTypes.objectProperty(babelTypes.stringLiteral(attr), map[attr].length > 1 ? babelTypes.arrayExpression(map[attr]) : map[attr][0]);
         }));
       }
     }, {
       key: "visitCode",
-      value: function visitCode(code) {
+      value: function visitCode(code, index) {
+        var isPureElse = false;
+        if (/^if /.test(code.val)) {
+          this.currentChain.push([index]);
+          return extractExpression(code.val.slice(2), this);
+        } else if (/^else if /.test(code.val)) {
+          this.currentChain[this.currentChain.length - 1].push(index);
+          return extractExpression(code.val.slice(7), this);
+        } else if (/^else/.test(code.val)) {
+          this.currentChain[this.currentChain.length - 1].push(index);
+          return;
+        }
+        if (isPureElse) return;
         return extractExpression(code.val, this);
       }
     }, {
       key: "visitEach",
       value: function visitEach(node) {
-        this.declared[node.key] = false;
-        this.declared[node.val] = false;
-        var declarations = this.declarations;
-        this.declarations = [];
         var elements = this.visitBlock(node.block);
-        var declare = this.declarations.length ? babelTypes.variableDeclaration('var', this.declarations) : null;
-        var elements = Object.assign(each({
+        var object = extractExpression(node.obj, this);
+
+        return Object.assign(each({
           BLOCK: elements,
-          DECLARATIONS: declare,
-          OBJECT: extractExpression(node.obj, this),
-          VALUE: extractExpression(node.val, this),
-          KEY: extractExpression(node.key, this)
+          OBJECT: object,
+          VALUE: babelTypes.identifier(node.val),
+          KEY: babelTypes.identifier(node.key)
         }), {
           loc: {
             start: { line: node.line }
           }
         });
-        this.declarations = declarations;
-        return elements;
       }
     }, {
       key: "visitText",
       value: function visitText(node) {
         return extractExpression('`' + node.val.replace(/#{/g, '${') + '`', this);
       }
+    }, {
+      key: "currentChain",
+      get: function get() {
+        return this.chain[this.depth];
+      }
     }]);
     return ElementCreateCompiler;
   }();
 
-  function fnJade(template) {
-    var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-
+  function fnJade(template, options) {
+    options || (options = {});
     return jade.render(template, Object.assign({ compiler: ElementCreateCompiler, template: template }, options));
   }
 

@@ -102,7 +102,7 @@ export default class ElementCreateCompiler {
     }
     if(declarations.length) {
       block.unshift(
-        variableDeclaration('var', declarations),
+        variableDeclaration('var', declarations)
       )
     }
     this.imports = []
