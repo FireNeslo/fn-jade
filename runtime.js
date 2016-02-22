@@ -12,14 +12,69 @@
   };
   babelHelpers;
 
+  function sentenceCase(str) {
+    str || (str = '');
+    return str.replace(/([A-Z])/g, function (_, match) {
+      return ' ' + match.toLowerCase();
+    }).replace(/[_\- ]+(.)/g, ' $1').trim();
+  }
+
+  function kebabize(str) {
+    return sentenceCase(str).replace(/[ ]/g, '-');
+  }
+
+  function classHelper(className) {
+    if (Array.isArray(className)) {
+      return className.map(classHelper).join(' ');
+    }
+    if ((typeof className === 'undefined' ? 'undefined' : babelHelpers.typeof(className)) === 'object') {
+      return Object.keys(className).filter(function (c) {
+        return className[c];
+      }).join(' ');
+    }
+    return className;
+  }
+
+  function styleHelper(styles) {
+    if (!styles) return;
+    if (Array.isArray(styles)) {
+      return styles.map(styleHelper).join(';');
+    }
+    if ('object' == (typeof styles === 'undefined' ? 'undefined' : babelHelpers.typeof(styles))) {
+      return Object.keys(styles).map(function (key) {
+        return kebabize(key) + ':' + styles[key];
+      }).join(';');
+    }
+    return styles;
+  }
+
   function element(tag, attributes, children) {
     if (!Array.isArray(children)) {
       children = [children];
     }
-    return new virtualDom.VNode(tag, { attributes: attributes }, children.map(function (node) {
-      if (node == null) return new virtualDom.VText('');
-      return (typeof node === 'undefined' ? 'undefined' : babelHelpers.typeof(node)) !== 'object' ? new virtualDom.VText(node) : node;
-    }));
+    if (attributes.class) {
+      attributes.class = classHelper(attributes.class);
+    }
+    if (attributes.style) {
+      attributes.style = styleHelper(attributes.style);
+    }
+    for (var attr in attributes) {
+      if (attributes[attr] == null || attributes[attr] === false) {
+        delete attributes[attr];
+        continue;
+      }
+      if (Array.isArray(attributes[attr])) {
+        attributes[attr] = attributes[attr].pop();
+      }
+      attributes[attr] = '' + attributes[attr];
+    }
+    var ret = [];
+    for (var i = 0; i < children.length; i++) {
+      var node = children[i];
+      if (node == null) continue;
+      ret.push((typeof node === 'undefined' ? 'undefined' : babelHelpers.typeof(node)) !== 'object' ? new virtualDom.VText(node) : node);
+    }
+    return new virtualDom.VNode(tag, { attributes: attributes }, ret);
   }
 
   return element;
