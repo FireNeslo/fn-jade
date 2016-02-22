@@ -37,6 +37,7 @@ export default function element(tag, attributes, children) {
   for(var attr in attributes) {
     if(attributes[attr] == null || attributes[attr] === false) {
       delete attributes[attr]
+      continue
     }
     if(Array.isArray(attributes[attr])) {
       attributes[attr] = attributes[attr].pop()
