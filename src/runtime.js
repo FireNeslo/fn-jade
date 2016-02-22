@@ -43,8 +43,11 @@ export default function element(tag, attributes, children) {
     }
     attributes[attr] = '' + attributes[attr]
   }
-  return new VNode(tag, {attributes}, children.map( node => {
-    if(node == null) return new VText('')
-    return typeof node !== 'object' ? new VText(node) : node
-  }))
+  var ret = []
+  for(var i = 0; i < children.length; i++) {
+    var node = children[i]
+    if(node == null) continue
+    ret.push(typeof node !== 'object' ? new VText(node) : node)
+  }
+  return new VNode(tag, {attributes}, ret)
 }
