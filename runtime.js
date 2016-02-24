@@ -49,8 +49,13 @@
   }
 
   function element(tag, attributes, children) {
+    var properties = { attributes: attributes };
     if (!Array.isArray(children)) {
       children = [children];
+    }
+    if (attributes.key) {
+      properties.key = attributes.key;
+      delete attributes.key;
     }
     if (attributes.class) {
       attributes.class = classHelper(attributes.class);
@@ -59,6 +64,10 @@
       attributes.style = styleHelper(attributes.style);
     }
     for (var attr in attributes) {
+      if (attr[0] === '[') {
+        properties[attr.slice(1, -1)] = attributes[attr];
+        delete attributes[attr];
+      }
       if (attributes[attr] == null || attributes[attr] === false) {
         delete attributes[attr];
         continue;
@@ -74,7 +83,7 @@
       if (node == null) continue;
       ret.push((typeof node === 'undefined' ? 'undefined' : babelHelpers.typeof(node)) !== 'object' ? new virtualDom.VText(node) : node);
     }
-    return new virtualDom.VNode(tag, { attributes: attributes }, ret);
+    return new virtualDom.VNode(tag, properties, ret);
   }
 
   return element;

@@ -25,8 +25,13 @@ function styleHelper(styles) {
 }
 
 export default function element(tag, attributes, children) {
+  var properties = {attributes}
   if(!Array.isArray(children)) {
     children = [children]
+  }
+  if(attributes.key) {
+    properties.key = attributes.key
+    delete attributes.key
   }
   if(attributes.class) {
     attributes.class = classHelper(attributes.class)
@@ -35,6 +40,10 @@ export default function element(tag, attributes, children) {
     attributes.style = styleHelper(attributes.style)
   }
   for(var attr in attributes) {
+    if(attr[0] === '[') {
+      properties[attr.slice(1, -1)] = attributes[attr]
+      delete attributes[attr]
+    }
     if(attributes[attr] == null || attributes[attr] === false) {
       delete attributes[attr]
       continue
@@ -50,5 +59,5 @@ export default function element(tag, attributes, children) {
     if(node == null) continue
     ret.push(typeof node !== 'object' ? new VText(node) : node)
   }
-  return new VNode(tag, {attributes}, ret)
+  return new VNode(tag, properties, ret)
 }
