@@ -166,7 +166,10 @@ export default class ElementCreateCompiler {
     return
   }
   visitTag(tag, create) {
-    if(tag.code) tag.block.nodes.push(tag.code)
+    if(tag.code) {
+      tag.block.nodes.push(tag.code)
+      tag.block.nodes = tag.block.nodes.concat(tag.code.block.nodes)
+    }
     create = callExpression(this.create, [
       stringLiteral(tag.name),
       this.visitAttributes(tag.attrs),
