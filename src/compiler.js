@@ -199,7 +199,7 @@ export default class ElementCreateCompiler {
         attr.name = '[' + event + ']'
         map['('+event+'Changed)'] = [ handler.expression ]
       } else if(attr.name[0] === '(') {
-        map['('+event+')'] = [ eventTemplate({BINDING: expression}).expression ]
+        expression = eventTemplate({BINDING: expression}).expression
       }
       map[attr.name] || (map[attr.name] = [])
       map[attr.name].push(expression)

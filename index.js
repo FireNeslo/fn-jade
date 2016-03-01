@@ -10,6 +10,11 @@
   traverse = 'default' in traverse ? traverse['default'] : traverse;
 
   var babelHelpers = {};
+  babelHelpers.typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+    return typeof obj;
+  } : function (obj) {
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
+  };
 
   babelHelpers.classCallCheck = function (instance, Constructor) {
     if (!(instance instanceof Constructor)) {
@@ -278,7 +283,7 @@
               attr.name = '[' + event + ']';
               map['(' + event + 'Changed)'] = [handler.expression];
             } else if (attr.name[0] === '(') {
-              map['(' + event + ')'] = [eventTemplate({ BINDING: expression }).expression];
+              expression = eventTemplate({ BINDING: expression }).expression;
             }
             map[attr.name] || (map[attr.name] = []);
             map[attr.name].push(expression);
