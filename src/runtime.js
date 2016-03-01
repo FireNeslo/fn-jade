@@ -1,6 +1,17 @@
 import {VNode, VText} from "virtual-dom"
 import kebabize from './kebabize'
 
+function EventHook(event, callback) {
+  this.event = event
+  this.callback = callback
+}
+EventHook.prototype.hook = function hook(node) {
+  node.addEventListener(this.event, this.callback)
+}
+EventHook.prototype.unhook = function hook(node) {
+  node.removeEventListener(this.event, this.callback)
+}
+
 function classHelper(className) {
   if(Array.isArray(className)) {
     return className.map(classHelper).join(' ')
@@ -42,6 +53,10 @@ export default function element(tag, attributes, children) {
   for(var attr in attributes) {
     if(attr[0] === '[') {
       properties[attr.slice(1, -1)] = attributes[attr]
+      delete attributes[attr]
+    }
+    if(attr[0] === '(') {
+      properties[attr] = new EventHook(attr.slice(1, -1), attributes[attr])
       delete attributes[attr]
     }
     if(attributes[attr] == null || attributes[attr] === false) {

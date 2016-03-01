@@ -41,6 +41,9 @@
 
   var reduceTemplate = template("OBJECT.reduce((nodes, VALUE, KEY)=> {\n  return nodes.concat(BLOCK);\n}, [])");
 
+  var assignTemplate = template("(e => BINDING = e.target[PROPERTY])");
+  var eventTemplate = template("(e => BINDING)");
+
   function each(object, template) {
     if (object.BLOCK.elements) {
       template = reduceTemplate(object);
@@ -265,8 +268,20 @@
           for (var _iterator3 = attrs[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
             var attr = _step3.value;
 
+            var expression = extractExpression(attr.val, this);
+            if (attr.name[0] === '[' && attr.name[1] === '(') {
+              var event = attr.name.slice(2, -2);
+              var handler = assignTemplate({
+                BINDING: expression,
+                PROPERTY: babelTypes.stringLiteral(event)
+              });
+              attr.name = '[' + event + ']';
+              map['(' + event + 'Changed)'] = [handler.expression];
+            } else if (attr.name[0] === '(') {
+              map['(' + event + ')'] = [eventTemplate({ BINDING: expression }).expression];
+            }
             map[attr.name] || (map[attr.name] = []);
-            map[attr.name].push(extractExpression(attr.val, this));
+            map[attr.name].push(expression);
           }
         } catch (err) {
           _didIteratorError3 = true;

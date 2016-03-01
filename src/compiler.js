@@ -25,6 +25,9 @@ var reduceTemplate = template(`OBJECT.reduce((nodes, VALUE, KEY)=> {
   return nodes.concat(BLOCK);
 }, [])`)
 
+var assignTemplate = template(`(e => BINDING = e.target[PROPERTY])`)
+var eventTemplate = template(`(e => BINDING)`)
+
 function each(object, template) {
   if(object.BLOCK.elements) {
     template = reduceTemplate(object)
@@ -186,8 +189,20 @@ export default class ElementCreateCompiler {
   visitAttributes(attrs) {
     var map = {}
     for(var attr of attrs) {
+      var expression = extractExpression(attr.val, this)
+      if(attr.name[0] === '[' && attr.name[1] === '(') {
+        var event = attr.name.slice(2, -2)
+        var handler = assignTemplate({
+          BINDING: expression,
+          PROPERTY: stringLiteral(event)
+        })
+        attr.name = '[' + event + ']'
+        map['('+event+'Changed)'] = [ handler.expression ]
+      } else if(attr.name[0] === '(') {
+        map['('+event+')'] = [ eventTemplate({BINDING: expression}).expression ]
+      }
       map[attr.name] || (map[attr.name] = [])
-      map[attr.name].push(extractExpression(attr.val, this))
+      map[attr.name].push(expression)
     }
     var ret = []
     return objectExpression(Object.keys(map).map(attr =>

@@ -10,6 +10,31 @@
   } : function (obj) {
     return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
   };
+
+  babelHelpers.classCallCheck = function (instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  };
+
+  babelHelpers.createClass = function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  }();
+
   babelHelpers;
 
   function sentenceCase(str) {
@@ -22,6 +47,17 @@
   function kebabize(str) {
     return sentenceCase(str).replace(/[ ]/g, '-');
   }
+
+  function EventHook(event, callback) {
+    this.event = event;
+    this.callback = callback;
+  }
+  EventHook.prototype.hook = function hook(node) {
+    node.addEventListener(this.event, this.callback);
+  };
+  EventHook.prototype.unhook = function hook(node) {
+    node.removeEventListener(this.event, this.callback);
+  };
 
   function classHelper(className) {
     if (Array.isArray(className)) {
@@ -66,6 +102,10 @@
     for (var attr in attributes) {
       if (attr[0] === '[') {
         properties[attr.slice(1, -1)] = attributes[attr];
+        delete attributes[attr];
+      }
+      if (attr[0] === '(') {
+        properties[attr] = new EventHook(attr.slice(1, -1), attributes[attr]);
         delete attributes[attr];
       }
       if (attributes[attr] == null || attributes[attr] === false) {

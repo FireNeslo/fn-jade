@@ -20,7 +20,7 @@ gulp.task('runtime', function(){
 
 gulp.task('watch', ['build'], function () {
   watch('src/**/*.js', function() {
-    gulp.start(['build'])
+    gulp.start(['build', 'runtime'])
   })
 })
 
