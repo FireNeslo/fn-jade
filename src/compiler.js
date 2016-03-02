@@ -17,11 +17,11 @@ import {parse} from "babylon"
 
 const CONDITIONAL = /^(if|else|unless)/
 
-var eachTemplate = template(`OBJECT.map((VALUE, KEY)=> {
+var eachTemplate = template(`(OBJECT || []).map((VALUE, KEY)=> {
   return BLOCK
 })`)
 
-var reduceTemplate = template(`OBJECT.reduce((nodes, VALUE, KEY)=> {
+var reduceTemplate = template(`(OBJECT || []).reduce((nodes, VALUE, KEY)=> {
   return nodes.concat(BLOCK);
 }, [])`)
 
