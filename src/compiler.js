@@ -25,6 +25,11 @@ var reduceTemplate = template(`(OBJECT || []).reduce((nodes, VALUE, KEY)=> {
   return nodes.concat(BLOCK);
 }, [])`)
 
+var whileTemplate = template(`(function(children) {
+  while(CONDITION) {children = children.concat(BLOCK)}
+  return children
+}.call(this, []))`)
+
 var assignTemplate = template(`(e => BINDING = e.target[PROPERTY])`)
 var eventTemplate = template(`(e => BINDING)`)
 
@@ -214,7 +219,11 @@ export default class ElementCreateCompiler {
   }
   visitCode(code, index) {
     var isPureElse = false
-    if(/^if /.test(code.val)) {
+    if(/^while /.test(code.val)) {
+      var CONDITION = extractExpression(code.val.slice(5), this)
+      var BLOCK = this.visitBlock(code.block)
+      return spreadElement(whileTemplate({CONDITION, BLOCK}).expression)
+    } else if(/^if /.test(code.val)) {
       this.currentChain.push([index])
       return extractExpression(code.val.slice(2), this)
     } else if (/^else if /.test(code.val)) {
@@ -225,7 +234,8 @@ export default class ElementCreateCompiler {
       return
     }
     if(isPureElse) return
-    return extractExpression(code.val, this)
+    var expression = extractExpression(code.val, this)
+    return code.buffer ? expression : unaryExpression('void', expression)
   }
   visitEach(node) {
     var elements = this.visitBlock(node.block)

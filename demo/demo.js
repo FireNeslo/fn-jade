@@ -1,9 +1,10 @@
 var template = require('./index.jade.js')
 var create = require('virtual-dom').create
-window.data = {user: {}}
+window.data = {things: ['From', 'the', 'other', 'side']}
 
 var output = template(data)
 
 console.log(output)
 
-document.body.appendChild(create(output[0]))
+output.map(create).map(document.body.appendChild, document.body)
+

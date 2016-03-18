@@ -10,6 +10,11 @@
   traverse = 'default' in traverse ? traverse['default'] : traverse;
 
   var babelHelpers = {};
+  babelHelpers.typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+    return typeof obj;
+  } : function (obj) {
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
+  };
 
   babelHelpers.classCallCheck = function (instance, Constructor) {
     if (!(instance instanceof Constructor)) {
@@ -40,6 +45,8 @@
   var eachTemplate = template("(OBJECT || []).map((VALUE, KEY)=> {\n  return BLOCK\n})");
 
   var reduceTemplate = template("(OBJECT || []).reduce((nodes, VALUE, KEY)=> {\n  return nodes.concat(BLOCK);\n}, [])");
+
+  var whileTemplate = template("(function(children) {\n  while(CONDITION) {children = children.concat(BLOCK)}\n  return children\n}.call(this, []))");
 
   var assignTemplate = template("(e => BINDING = e.target[PROPERTY])");
   var eventTemplate = template("(e => BINDING)");
@@ -307,7 +314,11 @@
       key: "visitCode",
       value: function visitCode(code, index) {
         var isPureElse = false;
-        if (/^if /.test(code.val)) {
+        if (/^while /.test(code.val)) {
+          var CONDITION = extractExpression(code.val.slice(5), this);
+          var BLOCK = this.visitBlock(code.block);
+          return babelTypes.spreadElement(whileTemplate({ CONDITION: CONDITION, BLOCK: BLOCK }).expression);
+        } else if (/^if /.test(code.val)) {
           this.currentChain.push([index]);
           return extractExpression(code.val.slice(2), this);
         } else if (/^else if /.test(code.val)) {
@@ -318,7 +329,8 @@
           return;
         }
         if (isPureElse) return;
-        return extractExpression(code.val, this);
+        var expression = extractExpression(code.val, this);
+        return code.buffer ? expression : babelTypes.unaryExpression('void', expression);
       }
     }, {
       key: "visitEach",

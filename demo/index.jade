@@ -1,5 +1,14 @@
 button((click)=window.console.log("hello")) Hello
-h1 Here is an each over undefined
+h1 Here is an each
 each thingy in things
-  = thingy
+  p= thingy
+h1 Here is an each over undefined
+each thingy in nothing
+  p= thingy
+h1 Here is a while
+ul
+  - var a = 0
+  - a += 5
+  while a < 100
+    li= ++a
 
