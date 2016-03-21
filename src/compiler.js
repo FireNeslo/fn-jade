@@ -47,7 +47,6 @@ function each(object, template) {
 }
 
 function extractExpression(value, compiler, expressions=[]) {
-  console.log(value)
   if(value && value.trim && /^{[\s\S]*}$/m.test(value.trim())) {
     value = '(' + value + ')'
   }
