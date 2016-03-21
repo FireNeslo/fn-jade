@@ -62,7 +62,6 @@
   function extractExpression(value, compiler) {
     var expressions = arguments.length <= 2 || arguments[2] === undefined ? [] : arguments[2];
 
-    console.log(value);
     if (value && value.trim && /^{[\s\S]*}$/m.test(value.trim())) {
       value = '(' + value + ')';
     }
