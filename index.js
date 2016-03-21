@@ -10,6 +10,11 @@
   traverse = 'default' in traverse ? traverse['default'] : traverse;
 
   var babelHelpers = {};
+  babelHelpers.typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+    return typeof obj;
+  } : function (obj) {
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
+  };
 
   babelHelpers.classCallCheck = function (instance, Constructor) {
     if (!(instance instanceof Constructor)) {
@@ -251,7 +256,7 @@
             tag.block.nodes = tag.block.nodes.concat(tag.code.block.nodes);
           }
         }
-        create = babelTypes.callExpression(this.create, [babelTypes.stringLiteral(tag.name), this.visitAttributes(tag.attrs), this.visitBlock(tag.block)]);
+        create = babelTypes.callExpression(this.create, [babelTypes.stringLiteral(tag.name), this.visitAttributes(tag.attrs, tag.attributeBlocks), this.visitBlock(tag.block)]);
         return Object.assign(create, {
           loc: {
             start: { line: tag.line }
@@ -261,6 +266,8 @@
     }, {
       key: "visitAttributes",
       value: function visitAttributes(attrs) {
+        var blocks = arguments.length <= 1 || arguments[1] === undefined ? [] : arguments[1];
+
         var map = {};
         var _iteratorNormalCompletion3 = true;
         var _didIteratorError3 = false;
@@ -300,10 +307,13 @@
           }
         }
 
-        var ret = [];
-        return babelTypes.objectExpression(Object.keys(map).map(function (attr) {
+        var ret = babelTypes.objectExpression(Object.keys(map).map(function (attr) {
           return babelTypes.objectProperty(babelTypes.stringLiteral(attr), map[attr].length > 1 ? babelTypes.arrayExpression(map[attr]) : map[attr][0]);
         }));
+        if (blocks.length) {
+          ret = template("Object.assign(ATTRS, " + blocks + ")")({ ATTRS: ret }).expression;
+        }
+        return ret;
       }
     }, {
       key: "visitCode",

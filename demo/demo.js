@@ -1,6 +1,8 @@
 var template = require('./index.jade.js')
 var create = require('virtual-dom').create
-window.data = {things: ['From', 'the', 'other', 'side']}
+window.data = {
+  things: ['From', 'the', 'other', 'side']
+}
 
 var output = template(data)
 

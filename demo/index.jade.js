@@ -18,12 +18,17 @@ var $ = require("../runtime");module.exports= function template($ctx$ = this) {
     }, []),
     $("h1", {}, [`Here is a while`]),
     $("ul", {}, [void void(a = 0), void(a += 5), ...function(children) {
-      while (a < 100) {
+      while (a < 10) {
         children = children.concat([
           $("li", {}, [++a])
         ]);
       }
       return children;
-    }.call(this, [])])
+    }.call(this, [])]),
+    $("h1", Object.assign({
+      "herp": "derp"
+    }, {
+      style: 'background-color: red'
+    }), [`Here is dynamic attributes`])
   ];
 }

@@ -182,7 +182,7 @@ export default class ElementCreateCompiler {
     }
     create = callExpression(this.create, [
       stringLiteral(tag.name),
-      this.visitAttributes(tag.attrs),
+      this.visitAttributes(tag.attrs, tag.attributeBlocks),
       this.visitBlock(tag.block)
     ])
     return Object.assign(create, {
@@ -191,7 +191,7 @@ export default class ElementCreateCompiler {
       }
     })
   }
-  visitAttributes(attrs) {
+  visitAttributes(attrs, blocks=[]) {
     var map = {}
     for(var attr of attrs) {
       var expression = extractExpression(attr.val, this)
@@ -209,13 +209,16 @@ export default class ElementCreateCompiler {
       map[attr.name] || (map[attr.name] = [])
       map[attr.name].push(expression)
     }
-    var ret = []
-    return objectExpression(Object.keys(map).map(attr =>
+    var ret = objectExpression(Object.keys(map).map(attr =>
       objectProperty(
         stringLiteral(attr),
         map[attr].length > 1 ? arrayExpression(map[attr]) : map[attr][0]
       )
     ))
+    if(blocks.length) {
+      ret = template(`Object.assign(ATTRS, ${blocks})`)({ATTRS: ret}).expression
+    }
+    return ret
   }
   visitCode(code, index) {
     var isPureElse = false
