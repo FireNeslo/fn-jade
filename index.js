@@ -62,6 +62,7 @@
   function extractExpression(value, compiler) {
     var expressions = arguments.length <= 2 || arguments[2] === undefined ? [] : arguments[2];
 
+    console.log(value);
     if (value && value.trim && /^{[\s\S]*}$/m.test(value.trim())) {
       value = '(' + value + ')';
     }
@@ -261,6 +262,8 @@
     }, {
       key: "visitAttributes",
       value: function visitAttributes(attrs) {
+        var _this = this;
+
         var blocks = arguments.length <= 1 || arguments[1] === undefined ? [] : arguments[1];
 
         var map = {};
@@ -306,7 +309,12 @@
           return babelTypes.objectProperty(babelTypes.stringLiteral(attr), map[attr].length > 1 ? babelTypes.arrayExpression(map[attr]) : map[attr][0]);
         }));
         if (blocks.length) {
-          ret = template("Object.assign(ATTRS, " + blocks + ")")({ ATTRS: ret }).expression;
+          ret = template("Object.assign(ATTRS, BLOCKS)")({
+            ATTRS: ret,
+            BLOCKS: blocks.map(function (block) {
+              return extractExpression(block, _this);
+            })
+          }).expression;
         }
         return ret;
       }

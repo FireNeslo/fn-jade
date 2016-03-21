@@ -47,6 +47,7 @@ function each(object, template) {
 }
 
 function extractExpression(value, compiler, expressions=[]) {
+  console.log(value)
   if(value && value.trim && /^{[\s\S]*}$/m.test(value.trim())) {
     value = '(' + value + ')'
   }
@@ -216,7 +217,10 @@ export default class ElementCreateCompiler {
       )
     ))
     if(blocks.length) {
-      ret = template(`Object.assign(ATTRS, ${blocks})`)({ATTRS: ret}).expression
+      ret = template(`Object.assign(ATTRS, BLOCKS)`)({
+        ATTRS: ret,
+        BLOCKS: blocks.map(block => extractExpression(block, this))
+      }).expression
     }
     return ret
   }

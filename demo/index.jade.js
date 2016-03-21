@@ -1,5 +1,6 @@
 var $ = require("../runtime");module.exports= function template($ctx$ = this) {
-  var nothing = $ctx$.nothing,
+  var stuff = $ctx$.stuff,
+    nothing = $ctx$.nothing,
     things = $ctx$.things,
     thingy = $ctx$.thingy,
     a;
@@ -28,7 +29,7 @@ var $ = require("../runtime");module.exports= function template($ctx$ = this) {
     $("h1", Object.assign({
       "herp": "derp"
     }, {
-      style: 'background-color: red'
+      derp: stuff
     }), [`Here is dynamic attributes`])
   ];
 }
