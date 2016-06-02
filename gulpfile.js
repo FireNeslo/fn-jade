@@ -33,4 +33,4 @@ gulp.task('serve', ['watch'], function() {
   })
 })
 
-gulp.task('defa ult', ['watch'])
+gulp.task('default', ['watch'])

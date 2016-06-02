@@ -12,6 +12,15 @@ EventHook.prototype.unhook = function hook(node) {
   node.removeEventListener(this.event, this.callback)
 }
 
+function PropertyHook(property, value) {
+  this.property = property
+  this.value = value
+}
+PropertyHook.prototype.hook = function hook(node) {
+  node[this.property] = this.value
+};
+
+
 function classHelper(className) {
   if(Array.isArray(className)) {
     return className.map(classHelper).join(' ')
@@ -52,7 +61,7 @@ export default function element(tag, attributes, children) {
   }
   for(var attr in attributes) {
     if(attr[0] === '[') {
-      properties[attr.slice(1, -1)] = attributes[attr]
+      properties[attr] = new PropertyHook(attr.slice(1, -1), attributes[attr])
       delete attributes[attr]
     }
     if(attr[0] === '(') {

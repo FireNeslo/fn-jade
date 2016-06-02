@@ -10,31 +10,6 @@
   } : function (obj) {
     return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
   };
-
-  babelHelpers.classCallCheck = function (instance, Constructor) {
-    if (!(instance instanceof Constructor)) {
-      throw new TypeError("Cannot call a class as a function");
-    }
-  };
-
-  babelHelpers.createClass = function () {
-    function defineProperties(target, props) {
-      for (var i = 0; i < props.length; i++) {
-        var descriptor = props[i];
-        descriptor.enumerable = descriptor.enumerable || false;
-        descriptor.configurable = true;
-        if ("value" in descriptor) descriptor.writable = true;
-        Object.defineProperty(target, descriptor.key, descriptor);
-      }
-    }
-
-    return function (Constructor, protoProps, staticProps) {
-      if (protoProps) defineProperties(Constructor.prototype, protoProps);
-      if (staticProps) defineProperties(Constructor, staticProps);
-      return Constructor;
-    };
-  }();
-
   babelHelpers;
 
   function sentenceCase(str) {
@@ -57,6 +32,14 @@
   };
   EventHook.prototype.unhook = function hook(node) {
     node.removeEventListener(this.event, this.callback);
+  };
+
+  function PropertyHook(property, value) {
+    this.property = property;
+    this.value = value;
+  }
+  PropertyHook.prototype.hook = function hook(node) {
+    node[this.property] = this.value;
   };
 
   function classHelper(className) {
@@ -101,7 +84,7 @@
     }
     for (var attr in attributes) {
       if (attr[0] === '[') {
-        properties[attr.slice(1, -1)] = attributes[attr];
+        properties[attr] = new PropertyHook(attr.slice(1, -1), attributes[attr]);
         delete attributes[attr];
       }
       if (attr[0] === '(') {
