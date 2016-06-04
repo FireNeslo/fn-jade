@@ -10,31 +10,6 @@
   } : function (obj) {
     return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
   };
-
-  babelHelpers.classCallCheck = function (instance, Constructor) {
-    if (!(instance instanceof Constructor)) {
-      throw new TypeError("Cannot call a class as a function");
-    }
-  };
-
-  babelHelpers.createClass = function () {
-    function defineProperties(target, props) {
-      for (var i = 0; i < props.length; i++) {
-        var descriptor = props[i];
-        descriptor.enumerable = descriptor.enumerable || false;
-        descriptor.configurable = true;
-        if ("value" in descriptor) descriptor.writable = true;
-        Object.defineProperty(target, descriptor.key, descriptor);
-      }
-    }
-
-    return function (Constructor, protoProps, staticProps) {
-      if (protoProps) defineProperties(Constructor.prototype, protoProps);
-      if (staticProps) defineProperties(Constructor, staticProps);
-      return Constructor;
-    };
-  }();
-
   babelHelpers;
 
   function sentenceCase(str) {
@@ -53,18 +28,10 @@
     this.callback = callback;
   }
   EventHook.prototype.hook = function hook(node) {
-    if (typeof jQuery === 'undefined') {
-      node.addEventListener(this.event, this.callback);
-    } else {
-      jQuery(node).on(this.event, this.callback);
-    }
+    node.addEventListener(this.event, this.callback);
   };
   EventHook.prototype.unhook = function hook(node) {
-    if (typeof jQuery === 'undefined') {
-      node.removeEventListener(this.event, this.callback);
-    } else {
-      jQuery(node).off(this.event, this.callback);
-    }
+    node.removeEventListener(this.event, this.callback);
   };
 
   function PropertyHook(property, value) {
