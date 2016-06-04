@@ -136,8 +136,12 @@ export default class ElementCreateCompiler {
     try {
       return this['visit' + node.type](node, index, parent);
     } catch(e) {
-      console.error(e.stack)
-      return arrayExpression([])
+      if(this['visit' + node.type]) {
+        console.error(e.stack)
+      } else {
+        console.warn(node.type + ' is not currently supported.')
+      }
+      return
     }
   }
   visitBlock(block) {
@@ -168,10 +172,10 @@ export default class ElementCreateCompiler {
     }
   }
   visitDoctype() {
-    return
   }
   visitComment() {
-    return
+  }
+  visitBlockComment() {
   }
   visitTag(tag, create) {
     if(tag.code) {

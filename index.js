@@ -173,8 +173,12 @@
         try {
           return this['visit' + node.type](node, index, parent);
         } catch (e) {
-          console.error(e.stack);
-          return babelTypes.arrayExpression([]);
+          if (this['visit' + node.type]) {
+            console.error(e.stack);
+          } else {
+            console.warn(node.type + ' is not currently supported.');
+          }
+          return;
         }
       }
     }, {
@@ -234,14 +238,13 @@
       }
     }, {
       key: "visitDoctype",
-      value: function visitDoctype() {
-        return;
-      }
+      value: function visitDoctype() {}
     }, {
       key: "visitComment",
-      value: function visitComment() {
-        return;
-      }
+      value: function visitComment() {}
+    }, {
+      key: "visitBlockComment",
+      value: function visitBlockComment() {}
     }, {
       key: "visitTag",
       value: function visitTag(tag, create) {
