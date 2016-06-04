@@ -6,10 +6,18 @@ function EventHook(event, callback) {
   this.callback = callback
 }
 EventHook.prototype.hook = function hook(node) {
-  node.addEventListener(this.event, this.callback)
+  if(typeof jQuery === 'undefined') {
+    node.addEventListener(this.event, this.callback)
+  } else {
+    jQuery(node).on(this.event, this.callback)
+  }
 }
 EventHook.prototype.unhook = function hook(node) {
-  node.removeEventListener(this.event, this.callback)
+  if(typeof jQuery === 'undefined') {
+    node.removeEventListener(this.event, this.callback)
+  } else {
+    jQuery(node).off(this.event, this.callback)
+  }
 }
 
 function PropertyHook(property, value) {
