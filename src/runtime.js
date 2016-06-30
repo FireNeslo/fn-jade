@@ -83,5 +83,5 @@ export default function element(tag, attributes, children) {
     if(node == null) continue
     ret.push(typeof node !== 'object' ? new VText(node) : node)
   }
-  return new VNode(tag, properties, ret)
+  return new VNode(tag, properties, ret, null, attributes.xmlns)
 }
