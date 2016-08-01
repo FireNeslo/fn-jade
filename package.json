@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "budo": "^8.0.4",
+    "budo": "^8.3.0",
     "gulp": "^3.9.0",
     "gulp-rollup": "^1.7.0",
     "gulp-sourcemaps": "^1.6.0",
