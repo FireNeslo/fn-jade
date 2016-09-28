@@ -1,13 +1,13 @@
-var jade = require('..')
-var fs = require('fs')
+var template = require('./index.jade')
+var create = require('virtual-dom').create
+window.data = {
+  things: ['From', 'the', 'other', 'side'],
+  stuff: 3
+}
 
+var output = template.call(data, data)
 
-var file = fs.readFileSync(__dirname+'/index.jade')
+console.log(output)
 
+output.map(create).map(document.body.appendChild, document.body)
 
-var output = jade(file, {pretty: true})
-
-
-fs.writeFileSync(
-  __dirname+'/index.jade.js',
-  'var $ = require("../runtime");module.exports= '+output)
