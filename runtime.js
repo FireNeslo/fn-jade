@@ -4,14 +4,6 @@
   (global.vJade = factory(global.virtualDom));
 }(this, function (virtualDom) { 'use strict';
 
-  var babelHelpers = {};
-  babelHelpers.typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
-    return typeof obj;
-  } : function (obj) {
-    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
-  };
-  babelHelpers;
-
   function sentenceCase(str) {
     str || (str = '');
     return str.replace(/([A-Z])/g, function (_, match) {
@@ -22,6 +14,12 @@
   function kebabize(str) {
     return sentenceCase(str).replace(/[ ]/g, '-');
   }
+
+  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+    return typeof obj;
+  } : function (obj) {
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
+  };
 
   function EventHook(event, callback) {
     this.event = event;
@@ -46,7 +44,7 @@
     if (Array.isArray(className)) {
       return className.map(classHelper).join(' ');
     }
-    if ((typeof className === 'undefined' ? 'undefined' : babelHelpers.typeof(className)) === 'object') {
+    if ((typeof className === 'undefined' ? 'undefined' : _typeof(className)) === 'object') {
       return Object.keys(className).filter(function (c) {
         return className[c];
       }).join(' ');
@@ -59,7 +57,7 @@
     if (Array.isArray(styles)) {
       return styles.map(styleHelper).join(';');
     }
-    if ('object' == (typeof styles === 'undefined' ? 'undefined' : babelHelpers.typeof(styles))) {
+    if ('object' == (typeof styles === 'undefined' ? 'undefined' : _typeof(styles))) {
       return Object.keys(styles).map(function (key) {
         return kebabize(key) + ':' + styles[key];
       }).join(';');
@@ -82,6 +80,21 @@
     if (attributes.style) {
       attributes.style = styleHelper(attributes.style);
     }
+    var ret = [];
+    for (var i = 0; i < children.length; i++) {
+      var node = children[i];
+      var type = typeof node === 'undefined' ? 'undefined' : _typeof(node);
+      if (type === 'object' && !(node instanceof virtualDom.VNode)) {
+        if (attributes['[innerHTML]'] && node['[innerHTML]']) {
+          attributes['[innerHTML]'] += node['[innerHTML]'];
+          delete node['[innerHTML]'];
+        }
+        Object.assign(attributes, node);
+        continue;
+      }
+      if (node == null) continue;
+      ret.push(type !== 'object' ? new virtualDom.VText(node) : node);
+    }
     for (var attr in attributes) {
       if (attr[0] === '[') {
         properties[attr] = new PropertyHook(attr.slice(1, -1), attributes[attr]);
@@ -99,12 +112,6 @@
         attributes[attr] = attributes[attr].pop();
       }
       attributes[attr] = '' + attributes[attr];
-    }
-    var ret = [];
-    for (var i = 0; i < children.length; i++) {
-      var node = children[i];
-      if (node == null) continue;
-      ret.push((typeof node === 'undefined' ? 'undefined' : babelHelpers.typeof(node)) !== 'object' ? new virtualDom.VText(node) : node);
     }
     return new virtualDom.VNode(tag, properties, ret, null, attributes.xmlns);
   }
