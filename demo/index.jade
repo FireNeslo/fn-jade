@@ -12,5 +12,7 @@ ul
   while a < 10
     li= ++a
 h1(herp="derp")&attributes({derp: stuff}) Here is dynamic attributes
-h1!= 'This is a <b>test</b> of unescaped input'
+h1
+  != 'This is a <em>test</em> of unescaped input'
+  != '<br>and this is a <em>test</em> of even more unescaped input'
 

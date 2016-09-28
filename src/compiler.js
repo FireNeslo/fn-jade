@@ -245,6 +245,11 @@ export default class ElementCreateCompiler {
     }
     if(isPureElse) return
     var expression = extractExpression(code.val, this)
+    if(!code.escape && expression.type === 'StringLiteral') {
+      return objectExpression([
+        objectProperty(stringLiteral('[innerHTML]'), expression)
+      ])
+    }
     return code.buffer ? expression : unaryExpression('void', expression)
   }
   visitEach(node) {

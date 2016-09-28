@@ -59,6 +59,21 @@ export default function element(tag, attributes, children) {
   if(attributes.style) {
     attributes.style = styleHelper(attributes.style)
   }
+  var ret = []
+  for(var i = 0; i < children.length; i++) {
+    var node = children[i]
+    var type = typeof node
+    if(type === 'object' && !(node instanceof VNode)) {
+      if(attributes['[innerHTML]'] && node['[innerHTML]']) {
+        attributes['[innerHTML]'] += node['[innerHTML]']
+        delete node['[innerHTML]']
+      }
+      Object.assign(attributes, node)
+      continue
+    }
+    if(node == null) continue
+    ret.push(type !== 'object' ? new VText(node) : node)
+  }
   for(var attr in attributes) {
     if(attr[0] === '[') {
       properties[attr] = new PropertyHook(attr.slice(1, -1), attributes[attr])
@@ -76,12 +91,6 @@ export default function element(tag, attributes, children) {
       attributes[attr] = attributes[attr].pop()
     }
     attributes[attr] = '' + attributes[attr]
-  }
-  var ret = []
-  for(var i = 0; i < children.length; i++) {
-    var node = children[i]
-    if(node == null) continue
-    ret.push(typeof node !== 'object' ? new VText(node) : node)
   }
   return new VNode(tag, properties, ret, null, attributes.xmlns)
 }
