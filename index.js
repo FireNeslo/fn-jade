@@ -336,7 +336,7 @@
         }
         if (isPureElse) return;
         var expression = extractExpression(code.val, this);
-        if (!code.escape) {
+        if (!code.escape && code.output) {
           return babelTypes.objectExpression([babelTypes.objectProperty(babelTypes.stringLiteral('[innerHTML]'), expression)]);
         }
         return code.buffer ? expression : babelTypes.unaryExpression('void', expression);
