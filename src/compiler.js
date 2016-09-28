@@ -245,7 +245,7 @@ export default class ElementCreateCompiler {
     }
     if(isPureElse) return
     var expression = extractExpression(code.val, this)
-    if(!code.escape && expression.type === 'StringLiteral') {
+    if(!code.escape) {
       return objectExpression([
         objectProperty(stringLiteral('[innerHTML]'), expression)
       ])

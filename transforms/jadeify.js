@@ -9,7 +9,7 @@ module.exports = function fnJadeify(file, options) {
   if(file.indexOf('.jade') < 0) return through()
   return through(function(buffer, enc, cb) {
     var template = buffer.toString()
-    var $ = `var $ = require('${directory}/runtime')\n`
+    var $ = `var $ = require('${directory}/runtime').default\n`
     try {
       console.log("Module stuff")
       var module = $ + 'module.exports = ' + fnJade(template, {

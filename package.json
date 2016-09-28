@@ -1,9 +1,10 @@
 {
   "name": "fn-jade",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "budo ./demo/index.js --live -- -t ./transforms/jadeify -t [babelify --presets es2015 --presets stage-0]",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

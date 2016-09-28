@@ -11,6 +11,10 @@ ul
   - a += 5
   while a < 10
     li= ++a
+if window.Math.random() * 2 | 0
+  h1 Here is an <em>if</em>
+else
+  h1 Here is an <em>else</em>
 h1(herp="derp")&attributes({derp: stuff}) Here is dynamic attributes
 h1
   != 'This is a <em>test</em> of unescaped input'
