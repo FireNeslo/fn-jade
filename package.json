@@ -9,12 +9,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "browserify": {
-    "transform": [
-      "./transforms/jadeify",
-      "rollupify"
-    ]
-  },
   "devDependencies": {
     "budo": "^8.3.0",
     "gulp": "^3.9.0",
