@@ -46,11 +46,12 @@ function styleHelper(styles) {
 
 export default function element(tag, attributes, children) {
   var properties = {attributes}
+  var key = null
   if(!Array.isArray(children)) {
     children = [children]
   }
   if(attributes.key) {
-    properties.key = attributes.key
+    key = attributes.key
     delete attributes.key
   }
   if(attributes.class) {
@@ -83,5 +84,5 @@ export default function element(tag, attributes, children) {
     if(node == null) continue
     ret.push(typeof node !== 'object' ? new VText(node) : node)
   }
-  return new VNode(tag, properties, ret, null, attributes.xmlns)
+  return new VNode(tag, properties, ret, key, attributes.xmlns)
 }

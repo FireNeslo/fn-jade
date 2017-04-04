@@ -4,14 +4,6 @@
   (global.vJade = factory(global.virtualDom));
 }(this, function (virtualDom) { 'use strict';
 
-  var babelHelpers = {};
-  babelHelpers.typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
-    return typeof obj;
-  } : function (obj) {
-    return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj;
-  };
-  babelHelpers;
-
   function sentenceCase(str) {
     str || (str = '');
     return str.replace(/([A-Z])/g, function (_, match) {
@@ -22,6 +14,125 @@
   function kebabize(str) {
     return sentenceCase(str).replace(/[ ]/g, '-');
   }
+
+  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+    return typeof obj;
+  } : function (obj) {
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+  };
+
+  var asyncGenerator = function () {
+    function AwaitValue(value) {
+      this.value = value;
+    }
+
+    function AsyncGenerator(gen) {
+      var front, back;
+
+      function send(key, arg) {
+        return new Promise(function (resolve, reject) {
+          var request = {
+            key: key,
+            arg: arg,
+            resolve: resolve,
+            reject: reject,
+            next: null
+          };
+
+          if (back) {
+            back = back.next = request;
+          } else {
+            front = back = request;
+            resume(key, arg);
+          }
+        });
+      }
+
+      function resume(key, arg) {
+        try {
+          var result = gen[key](arg);
+          var value = result.value;
+
+          if (value instanceof AwaitValue) {
+            Promise.resolve(value.value).then(function (arg) {
+              resume("next", arg);
+            }, function (arg) {
+              resume("throw", arg);
+            });
+          } else {
+            settle(result.done ? "return" : "normal", result.value);
+          }
+        } catch (err) {
+          settle("throw", err);
+        }
+      }
+
+      function settle(type, value) {
+        switch (type) {
+          case "return":
+            front.resolve({
+              value: value,
+              done: true
+            });
+            break;
+
+          case "throw":
+            front.reject(value);
+            break;
+
+          default:
+            front.resolve({
+              value: value,
+              done: false
+            });
+            break;
+        }
+
+        front = front.next;
+
+        if (front) {
+          resume(front.key, front.arg);
+        } else {
+          back = null;
+        }
+      }
+
+      this._invoke = send;
+
+      if (typeof gen.return !== "function") {
+        this.return = undefined;
+      }
+    }
+
+    if (typeof Symbol === "function" && Symbol.asyncIterator) {
+      AsyncGenerator.prototype[Symbol.asyncIterator] = function () {
+        return this;
+      };
+    }
+
+    AsyncGenerator.prototype.next = function (arg) {
+      return this._invoke("next", arg);
+    };
+
+    AsyncGenerator.prototype.throw = function (arg) {
+      return this._invoke("throw", arg);
+    };
+
+    AsyncGenerator.prototype.return = function (arg) {
+      return this._invoke("return", arg);
+    };
+
+    return {
+      wrap: function (fn) {
+        return function () {
+          return new AsyncGenerator(fn.apply(this, arguments));
+        };
+      },
+      await: function (value) {
+        return new AwaitValue(value);
+      }
+    };
+  }();
 
   function EventHook(event, callback) {
     this.event = event;
@@ -46,7 +157,7 @@
     if (Array.isArray(className)) {
       return className.map(classHelper).join(' ');
     }
-    if ((typeof className === 'undefined' ? 'undefined' : babelHelpers.typeof(className)) === 'object') {
+    if ((typeof className === 'undefined' ? 'undefined' : _typeof(className)) === 'object') {
       return Object.keys(className).filter(function (c) {
         return className[c];
       }).join(' ');
@@ -59,7 +170,7 @@
     if (Array.isArray(styles)) {
       return styles.map(styleHelper).join(';');
     }
-    if ('object' == (typeof styles === 'undefined' ? 'undefined' : babelHelpers.typeof(styles))) {
+    if ('object' == (typeof styles === 'undefined' ? 'undefined' : _typeof(styles))) {
       return Object.keys(styles).map(function (key) {
         return kebabize(key) + ':' + styles[key];
       }).join(';');
@@ -69,11 +180,12 @@
 
   function element(tag, attributes, children) {
     var properties = { attributes: attributes };
+    var key = null;
     if (!Array.isArray(children)) {
       children = [children];
     }
     if (attributes.key) {
-      properties.key = attributes.key;
+      key = attributes.key;
       delete attributes.key;
     }
     if (attributes.class) {
@@ -104,9 +216,9 @@
     for (var i = 0; i < children.length; i++) {
       var node = children[i];
       if (node == null) continue;
-      ret.push((typeof node === 'undefined' ? 'undefined' : babelHelpers.typeof(node)) !== 'object' ? new virtualDom.VText(node) : node);
+      ret.push((typeof node === 'undefined' ? 'undefined' : _typeof(node)) !== 'object' ? new virtualDom.VText(node) : node);
     }
-    return new virtualDom.VNode(tag, properties, ret, null, attributes.xmlns);
+    return new virtualDom.VNode(tag, properties, ret, key, attributes.xmlns);
   }
 
   return element;
