@@ -16,9 +16,8 @@ function PropertyHook(property, value) {
   this.property = property
   this.value = value
 }
-PropertyHook.prototype.hook = function hook(node, prop, prev) {
+PropertyHook.prototype.hook = function hook(node) {
   node[this.property] = this.value
-  if(node.render) node.render()
 };
 
 
@@ -47,12 +46,11 @@ function styleHelper(styles) {
 
 export default function element(tag, attributes, children) {
   var properties = {attributes}
-  var key = null
   if(!Array.isArray(children)) {
     children = [children]
   }
   if(attributes.key) {
-    key = attributes.key
+    properties.key = attributes.key
     delete attributes.key
   }
   if(attributes.class) {
@@ -60,6 +58,21 @@ export default function element(tag, attributes, children) {
   }
   if(attributes.style) {
     attributes.style = styleHelper(attributes.style)
+  }
+  var ret = []
+  for(var i = 0; i < children.length; i++) {
+    var node = children[i]
+    var type = typeof node
+    if(type === 'object' && !(node instanceof VNode)) {
+      if(attributes['[innerHTML]'] && node['[innerHTML]']) {
+        attributes['[innerHTML]'] += node['[innerHTML]']
+        delete node['[innerHTML]']
+      }
+      Object.assign(attributes, node)
+      continue
+    }
+    if(node == null) continue
+    ret.push(type !== 'object' ? new VText(node) : node)
   }
   for(var attr in attributes) {
     if(attr[0] === '[') {
@@ -79,11 +92,5 @@ export default function element(tag, attributes, children) {
     }
     attributes[attr] = '' + attributes[attr]
   }
-  var ret = []
-  for(var i = 0; i < children.length; i++) {
-    var node = children[i]
-    if(node == null) continue
-    ret.push(typeof node !== 'object' ? new VText(node) : node)
-  }
-  return new VNode(tag, properties, ret, key, attributes.xmlns)
+  return new VNode(tag, properties, ret, null, attributes.xmlns)
 }

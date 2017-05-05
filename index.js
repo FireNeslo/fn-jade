@@ -9,15 +9,13 @@
   generate = 'default' in generate ? generate['default'] : generate;
   traverse = 'default' in traverse ? traverse['default'] : traverse;
 
-  var babelHelpers = {};
-
-  babelHelpers.classCallCheck = function (instance, Constructor) {
+  var classCallCheck = function (instance, Constructor) {
     if (!(instance instanceof Constructor)) {
       throw new TypeError("Cannot call a class as a function");
     }
   };
 
-  babelHelpers.createClass = function () {
+  var createClass = function () {
     function defineProperties(target, props) {
       for (var i = 0; i < props.length; i++) {
         var descriptor = props[i];
@@ -34,8 +32,6 @@
       return Constructor;
     };
   }();
-
-  babelHelpers;
 
   var eachTemplate = template("(OBJECT || []).map((VALUE, KEY)=> {\n  return BLOCK\n})");
 
@@ -98,13 +94,13 @@
 
   var ElementCreateCompiler = function () {
     function ElementCreateCompiler(node, options) {
-      babelHelpers.classCallCheck(this, ElementCreateCompiler);
+      classCallCheck(this, ElementCreateCompiler);
 
       this.node = node;
       this.options = options;
     }
 
-    babelHelpers.createClass(ElementCreateCompiler, [{
+    createClass(ElementCreateCompiler, [{
       key: "compile",
       value: function compile(root) {
         this.depth = 0;
@@ -340,6 +336,9 @@
         }
         if (isPureElse) return;
         var expression = extractExpression(code.val, this);
+        if (!code.escape && code.buffer) {
+          return babelTypes.objectExpression([babelTypes.objectProperty(babelTypes.stringLiteral('[innerHTML]'), expression)]);
+        }
         return code.buffer ? expression : babelTypes.unaryExpression('void', expression);
       }
     }, {
