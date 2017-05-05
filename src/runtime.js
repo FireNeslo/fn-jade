@@ -16,8 +16,9 @@ function PropertyHook(property, value) {
   this.property = property
   this.value = value
 }
-PropertyHook.prototype.hook = function hook(node) {
+PropertyHook.prototype.hook = function hook(node, prop, prev) {
   node[this.property] = this.value
+  if(node.render) node.render()
 };
 
 
