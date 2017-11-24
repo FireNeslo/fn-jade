@@ -5,14 +5,7 @@ var gulp       = require('gulp'),
     sourcemaps = require('gulp-sourcemaps');
 
 gulp.task('build', function(){
-  return gulp.src('src/index.js', {read: false})
-    .pipe(rollup(require('./rollup.config')))
-    .pipe(sourcemaps.write("."))
-    .pipe(gulp.dest('.'));
-});
-
-gulp.task('runtime', function(){
-  return gulp.src('src/runtime.js', {read: false})
+  return gulp.src('src/*.js')
     .pipe(rollup(require('./rollup.config')))
     .pipe(sourcemaps.write("."))
     .pipe(gulp.dest('.'));
@@ -20,7 +13,7 @@ gulp.task('runtime', function(){
 
 gulp.task('watch', ['build'], function () {
   watch('src/**/*.js', function() {
-    gulp.start(['build', 'runtime'])
+    gulp.start(['build'])
   })
 })
 

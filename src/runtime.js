@@ -80,6 +80,10 @@ export default function element(tag, attributes, children) {
       properties[attr] = new PropertyHook(attr.slice(1, -1), attributes[attr])
       delete attributes[attr]
     }
+    if(attr[0] === '*') {
+      properties[attr] = attributes[attr]
+      delete attributes[attr]
+    }
     if(attr[0] === '(') {
       properties[attr] = new EventHook(attr.slice(1, -1), attributes[attr])
       delete attributes[attr]

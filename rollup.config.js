@@ -1,8 +1,8 @@
 var babel = require('rollup-plugin-babel')
 
 module.exports =  {
-  entry: 'src/index.js',
+  input: [ 'src/index.js', 'src/runtime.js' ],
   plugins: [ babel({presets: ['es2015-rollup']}) ],
-  moduleName: 'vJade',
-  format: 'umd'
+  format: 'umd',
+  name: 'vJade'
 };
