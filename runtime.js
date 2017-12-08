@@ -190,7 +190,6 @@ function element(tag, attributes, children) {
   }
   if (attributes.key) {
     properties.key = attributes.key;
-    delete attributes.key;
   }
   if (attributes.class) {
     attributes.class = classHelper(attributes.class);
