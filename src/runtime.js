@@ -62,8 +62,9 @@ export default function element(tag, attributes, children) {
   var ret = []
   for(var i = 0; i < children.length; i++) {
     var node = children[i]
+    if(node == null) continue
     var type = typeof node
-    if(type === 'object' && !(node instanceof VNode)) {
+    if(type === 'object' && !(node.type === "VirtualNode")) {
       if(attributes['[innerHTML]'] && node['[innerHTML]']) {
         attributes['[innerHTML]'] += node['[innerHTML]']
         delete node['[innerHTML]']
@@ -71,7 +72,6 @@ export default function element(tag, attributes, children) {
       Object.assign(attributes, node)
       continue
     }
-    if(node == null) continue
     ret.push(type !== 'object' ? new VText(node) : node)
   }
   for(var attr in attributes) {
