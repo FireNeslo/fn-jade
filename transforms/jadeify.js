@@ -1,4 +1,4 @@
-require('babel-register')({presets: ['es2015', 'stage-0']})
+require('@babel/register')
 console.log('babel register done')
 var fnJade = require('../src').default
 var through = require('through2')

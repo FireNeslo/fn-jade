@@ -1,19 +1,19 @@
-import {expressionStatement, sequenceExpression} from "babel-types"
-import {spreadElement, functionDeclaration} from "babel-types"
-import {objectExpression, objectProperty} from "babel-types"
-import {arrayExpression, callExpression} from "babel-types"
-import {blockStatement, returnStatement} from "babel-types"
-import {stringLiteral, identifier, unaryExpression} from "babel-types"
-import {templateLiteral, conditionalExpression} from "babel-types"
-import {variableDeclaration, assignmentExpression} from "babel-types"
-import {VariableDeclarator, memberExpression} from "babel-types"
-import {numericLiteral, assignmentPattern} from "babel-types"
+import {expressionStatement, sequenceExpression} from "@babel/types"
+import {spreadElement, functionDeclaration} from "@babel/types"
+import {objectExpression, objectProperty} from "@babel/types"
+import {arrayExpression, callExpression} from "@babel/types"
+import {blockStatement, returnStatement} from "@babel/types"
+import {stringLiteral, identifier, unaryExpression} from "@babel/types"
+import {templateLiteral, conditionalExpression} from "@babel/types"
+import {variableDeclaration, assignmentExpression} from "@babel/types"
+import {VariableDeclarator, memberExpression} from "@babel/types"
+import {numericLiteral, assignmentPattern} from "@babel/types"
 
 import {js_beautify as beautify} from "js-beautify"
-import template from "babel-template";
-import generate from "babel-generator";
-import traverse from "babel-traverse"
-import {parse} from "babylon"
+import template from "@babel/template";
+import generate from "@babel/generator";
+import traverse from "@babel/traverse"
+import {parse} from "@babel/parser"
 
 const CONDITIONAL = /^(if|else|unless)/
 
